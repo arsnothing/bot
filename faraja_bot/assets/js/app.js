@@ -14,13 +14,44 @@ let marker = null;
 const forms = {};
 const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 const EN_DIGITS = '0123456789';
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 
 function faDigits(value) {
-  return String(value ?? '').replace(/[0-9]/g, d => FA_DIGITS[Number(d)]);
+  return String(value ?? '')
+    .replace(/[0-9]/g, digit => FA_DIGITS[Number(digit)])
+    .replace(/[٠-٩]/g, digit => FA_DIGITS[AR_DIGITS.indexOf(digit)]);
 }
 
 function enDigits(value) {
-  return String(value ?? '').replace(/[۰-۹]/g, d => EN_DIGITS[FA_DIGITS.indexOf(d)]);
+  return String(value ?? '')
+    .replace(/[۰-۹]/g, digit => EN_DIGITS[FA_DIGITS.indexOf(digit)])
+    .replace(/[٠-٩]/g, digit => EN_DIGITS[AR_DIGITS.indexOf(digit)]);
+}
+
+function normalizeFieldValue(element) {
+  if (element.type === 'file') return;
+  let value = faDigits(element.value);
+
+  if (element.dataset.numeric === 'true') {
+    value = value.replace(/[^۰-۹]/g, '');
+    const maxLength = Number(element.getAttribute('maxlength'));
+    if (Number.isInteger(maxLength) && maxLength > 0) value = value.slice(0, maxLength);
+  }
+
+  if (element.dataset.textOnly === 'true') {
+    value = value.replace(/[0-9۰-۹٠-٩]/g, '');
+  }
+
+  element.value = value;
+}
+
+function resizeTextarea(textarea) {
+  if (!textarea.matches('#formBody textarea[data-auto-resize="true"]')) return;
+  const maxHeight = 280;
+  textarea.style.height = 'auto';
+  const height = Math.min(Math.max(textarea.scrollHeight, 52), maxHeight);
+  textarea.style.height = `${height}px`;
+  textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
 }
 
 function normalizeVisibleNumbers() {
@@ -30,13 +61,15 @@ function normalizeVisibleNumbers() {
     }
   });
   document.querySelectorAll('input, textarea').forEach(el => {
-    if (el.value) el.value = faDigits(el.value);
+    if (el.value) normalizeFieldValue(el);
+    resizeTextarea(el);
   });
 }
 
 document.addEventListener('input', event => {
   if (event.target.matches('input, textarea')) {
-    event.target.value = faDigits(event.target.value);
+    normalizeFieldValue(event.target);
+    resizeTextarea(event.target);
   }
 });
 
@@ -85,18 +118,68 @@ function chooseSubtype(subtype) {
 
 function field(name, label, type = 'text', options = {}) {
   const numeric = options.numeric ? 'numeric' : '';
+  const textOnly = options.textOnly ? 'text-only' : '';
+  const maxLength = options.maxLength ? ` maxlength="${options.maxLength}"` : '';
+  const placeholder = options.placeholder ? ` placeholder="${options.placeholder}"` : '';
+  const validation = options.validation ? ` data-validation="${options.validation}"` : '';
+  const numericRule = options.numeric ? ' data-numeric="true"' : '';
+  const textRule = options.textOnly ? ' data-text-only="true"' : '';
+  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${placeholder}`;
+
   if (type === 'textarea') {
-    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea ${numeric}" data-field="${name}"></textarea></div>`;
+    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea ${numeric} ${textOnly}" ${attributes} data-auto-resize="true"></textarea></div>`;
   }
-  return `<div class="field-group"><label>${label}</label><input class="field-input ${numeric}" data-field="${name}" type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}"></div>`;
+  return `<div class="field-group"><label>${label}</label><input class="field-input ${numeric} ${textOnly}" ${attributes} type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}"></div>`;
 }
 
-function choices(name, label, items) {
-  return `<div class="field-group"><label>${label}</label><div class="choice-row" data-choice="${name}">${items.map(item => `<button type="button" class="choice-btn" onclick="pickChoice(this,'${name}','${item.replace(/'/g, "\\'")}')">${item}</button>`).join('')}</div></div>`;
+function choices(name, label, items, options = {}) {
+  const columns = options.columns === 3 ? ' choice-row--three' : '';
+  return `<div class="field-group"><label>${label}</label><div class="choice-row${columns}" data-choice="${name}">${items.map(item => `<button type="button" class="choice-btn" onclick="pickChoice(this,'${name}','${item.replace(/'/g, "\\'")}')">${item}</button>`).join('')}</div></div>`;
 }
 
 function yesNo(name, label) {
-  return choices(name, label, ['بله', 'خیر', 'نامشخص']);
+  return choices(name, label, ['بله', 'خیر', 'نامشخص'], { columns: 3 });
+}
+
+function isValidNationalId(value) {
+  const digits = enDigits(value);
+  if (!/^\d{10}$/.test(digits) || /^(\d)\1{9}$/.test(digits)) return false;
+  const total = digits.slice(0, 9).split('').reduce((sum, digit, index) => sum + Number(digit) * (10 - index), 0);
+  const remainder = total % 11;
+  const checkDigit = Number(digits[9]);
+  return checkDigit === (remainder < 2 ? remainder : 11 - remainder);
+}
+
+function fieldValidationMessage(element) {
+  const value = element.value.trim();
+  if (!value || !element.dataset.validation) return '';
+
+  const digits = enDigits(value);
+  const label = element.dataset.label || 'این فیلد';
+  if (element.dataset.validation === 'national-id' && !isValidNationalId(digits)) {
+    return `${label} باید ۱۰ رقم معتبر باشد.`;
+  }
+  if (element.dataset.validation === 'phone' && !/^\d{11}$/.test(digits)) {
+    return `${label} باید دقیقاً ۱۱ رقم باشد.`;
+  }
+  if (element.dataset.validation === 'age' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 1 || Number(digits) > 120)) {
+    return `${label} باید عددی بین ۱ تا ۱۲۰ باشد.`;
+  }
+  if (element.dataset.validation === 'height' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 30 || Number(digits) > 250)) {
+    return `${label} باید عددی تا ۳ رقم و بین ۳۰ تا ۲۵۰ سانتی‌متر باشد.`;
+  }
+  return '';
+}
+
+function validateVisibleFormFields() {
+  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation]'))
+    .map(element => ({ element, message: fieldValidationMessage(element) }))
+    .find(item => item.message);
+
+  if (!invalid) return true;
+  if (typeof invalid.element.focus === 'function') invalid.element.focus();
+  alert(invalid.message);
+  return false;
 }
 
 function formSection(title, fields, description) {
@@ -154,13 +237,13 @@ function buildForm(category, subtype) {
 function personForm() {
   return [
     formSection('مشخصات فردی',
-      `${field('firstName','نام')}${field('lastName','نام خانوادگی')}${field('nationalId','کد ملی','text',{numeric:true})}${field('age','سن','text',{numeric:true})}${choices('gender','جنسیت',['مرد','زن','نامشخص'])}`,
+      `${field('firstName','نام','text',{textOnly:true})}${field('lastName','نام خانوادگی','text',{textOnly:true})}${field('nationalId','کد ملی','text',{numeric:true,maxLength:10,validation:'national-id',placeholder:'۱۰ رقم'})}${field('age','سن','text',{numeric:true,maxLength:3,validation:'age',placeholder:'مثلاً ۳۵'})}${choices('gender','جنسیت',['مرد','زن'])}`,
       'اطلاعات پایه برای شناسایی فرد را وارد کنید.'),
     formSection('مشخصات ظاهری',
-      `${field('height','قد','text',{numeric:true})}${field('weight','وزن','text',{numeric:true})}${field('face','رنگ چهره')}${field('hairStatus','وضعیت موی سر')}${field('hairColor','رنگ مو')}${field('beard','محاسن')}${field('appearance','ویژگی خاص','textarea')}`,
+      `${field('height','قد (سانتی‌متر)','text',{numeric:true,maxLength:3,validation:'height',placeholder:'مثلاً ۱۷۵'})}${choices('bodyBuild','اندام',['لاغر','معمولی','چاق'],{columns:3})}${field('face','رنگ چهره','text',{textOnly:true})}${field('hairStatus','وضعیت موی سر','text',{textOnly:true})}${field('hairColor','رنگ مو','text',{textOnly:true})}${field('beard','محاسن','text',{textOnly:true})}${field('appearance','ویژگی خاص','textarea')}`,
       'ویژگی‌های ظاهری قابل مشاهده را ثبت کنید.'),
     formSection('ارتباط و فضای مجازی',
-      `${field('phoneFixed','تلفن ثابت','text',{numeric:true})}${field('phoneMobile','تلفن همراه','text',{numeric:true})}${field('phoneWork','تلفن محل کار','text',{numeric:true})}${field('phoneHome','تلفن منزل','text',{numeric:true})}${field('social','نشانی‌های فضای مجازی','textarea')}`,
+      `${field('phoneFixed','تلفن ثابت','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneMobile','تلفن همراه','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneWork','تلفن محل کار','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneHome','تلفن منزل','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('social','نشانی‌های فضای مجازی','textarea')}`,
       'راه‌های ارتباطی یا نشانی‌های مرتبط را وارد کنید.'),
     formSection('موضوع گزارش',
       `${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}${field('crimeType','نوع جرم یا تخلف','textarea')}${field('crimeMethod','نحوه ارتکاب و ترتیب وقوع','textarea')}${field('crimePlace','آدرس و مشخصات مکان وقوع','textarea')}${field('crimeDate','زمان وقوع یا زمان احتمالی','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
@@ -275,6 +358,7 @@ function nextFormSection() {
   const sections = buildForm(state.category, state.subtype);
   if (state.formStep >= sections.length - 1) return continueForm();
   collectForm();
+  if (!validateVisibleFormFields()) return;
   state.formStep += 1;
   renderFormSection(sections);
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -298,6 +382,7 @@ function pickChoice(button, name, value) {
 function collectForm() {
   const data = { ...state.form };
   delete data.priority;
+  delete data.weight;
   document.querySelectorAll('#formBody [data-field]').forEach(element => {
     const value = element.value.trim();
     if (value) data[element.dataset.field] = value;
@@ -325,10 +410,12 @@ function restoreFormValues() {
       });
     }
   });
+  document.querySelectorAll('#formBody textarea[data-auto-resize="true"]').forEach(resizeTextarea);
 }
 
 function continueForm() {
   collectForm();
+  if (!validateVisibleFormFields()) return;
   if (!Object.keys(state.form).length) return alert('حداقل یکی از اطلاعات گزارش را وارد کنید.');
   openTime();
 }

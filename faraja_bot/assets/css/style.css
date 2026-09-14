@@ -406,7 +406,20 @@ html,body{background:var(--bg);color:var(--text)}
   border-color:#dce6e0!important;
   border-radius:12px!important;
 }
-#formPage .form-section-fields .field-textarea{min-height:116px}
+#formPage .form-section-fields .field-input.numeric{
+  direction:ltr;
+  text-align:right;
+}
+#formPage .form-section-fields .field-textarea{
+  min-height:52px;
+  height:52px;
+  max-height:280px;
+  overflow-y:hidden;
+  resize:none;
+  line-height:1.7;
+  transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
+}
+#formPage .choice-row--three{grid-template-columns:repeat(3,minmax(0,1fr))}
 #formPage .form-actions{
   display:flex;
   align-items:stretch;
@@ -452,5 +465,6 @@ html,body{background:var(--bg);color:var(--text)}
 }
 @media(prefers-reduced-motion:reduce){
   #formPage .form-section-progress-track span,
-  #formPage .secondary-button{transition:none}
+  #formPage .secondary-button,
+  #formPage .form-section-fields .field-textarea{transition:none}
 }
