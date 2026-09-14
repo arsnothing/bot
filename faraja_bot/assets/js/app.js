@@ -2,6 +2,7 @@ const state = {
   category: '',
   subtype: '',
   form: {},
+  formStep: 0,
   location: {},
   time: {},
   documents: []
@@ -52,6 +53,7 @@ function resetReport() {
   state.category = '';
   state.subtype = '';
   state.form = {};
+  state.formStep = 0;
   state.location = {};
   state.time = {};
   state.documents = [];
@@ -67,6 +69,8 @@ function startReport() {
 function chooseCategory(category) {
   state.category = category;
   state.subtype = '';
+  state.form = {};
+  state.formStep = 0;
   if (category === 'شیء') return showPage('objectTypePage');
   if (category === 'پدیده اجتماعی') return showPage('phenomenonTypePage');
   openForm();
@@ -74,6 +78,8 @@ function chooseCategory(category) {
 
 function chooseSubtype(subtype) {
   state.subtype = subtype;
+  state.form = {};
+  state.formStep = 0;
   openForm();
 }
 
@@ -93,12 +99,48 @@ function yesNo(name, label) {
   return choices(name, label, ['بله', 'خیر', 'نامشخص']);
 }
 
+function formSection(title, fields, description) {
+  return { title, fields, description };
+}
+
 function openForm() {
   const title = state.subtype ? `${state.category} — ${state.subtype}` : state.category;
+  const sections = buildForm(state.category, state.subtype);
+  state.formStep = Math.min(Math.max(Number(state.formStep) || 0, 0), sections.length - 1);
   document.getElementById('formTitle').textContent = title;
-  document.getElementById('formBody').innerHTML = buildForm(state.category, state.subtype);
-  restoreFormValues();
+  renderFormSection(sections);
   showPage('formPage');
+}
+
+function renderFormSection(sections = buildForm(state.category, state.subtype)) {
+  const total = sections.length;
+  const current = sections[state.formStep];
+  const isLast = state.formStep === total - 1;
+  const currentNumber = faDigits(state.formStep + 1);
+  const totalNumber = faDigits(total);
+  const progress = ((state.formStep + 1) / total) * 100;
+
+  document.getElementById('formBody').innerHTML = `
+    <div class="form-section-progress" aria-label="بخش ${currentNumber} از ${totalNumber}">
+      <span>بخش ${currentNumber} از ${totalNumber}</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:${progress}%"></span></div>
+    </div>
+    <section class="form-section-card" aria-labelledby="formSectionTitle">
+      <header class="form-section-heading">
+        <h2 id="formSectionTitle">${current.title}</h2>
+        <p>${current.description}</p>
+      </header>
+      <div class="form-section-fields">${current.fields}</div>
+    </section>`;
+
+  const actions = document.getElementById('formActions');
+  actions.className = `form-actions${state.formStep === 0 ? ' first-step' : ''}`;
+  actions.innerHTML = `
+    ${state.formStep > 0 ? '<button class="secondary-button" onclick="previousFormSection()" type="button">مرحله قبل</button>' : ''}
+    <button class="primary-button" onclick="${isLast ? 'continueForm()' : 'nextFormSection()'}" type="button">${isLast ? 'تأیید فرم' : 'مرحله بعد'}</button>`;
+
+  restoreFormValues();
+  setTimeout(normalizeVisibleNumbers, 0);
 }
 
 function buildForm(category, subtype) {
@@ -110,47 +152,140 @@ function buildForm(category, subtype) {
 }
 
 function personForm() {
-  return `<div class="section-title">مشخصات فرد</div>
-    ${field('firstName','نام')}${field('lastName','نام خانوادگی')}${field('nationalId','کد ملی','text',{numeric:true})}${field('age','سن','text',{numeric:true})}
-    ${choices('gender','جنسیت',['مرد','زن','نامشخص'])}
-    <div class="section-title">مشخصات ظاهری</div>
-    ${field('height','قد','text',{numeric:true})}${field('weight','وزن','text',{numeric:true})}${field('face','رنگ چهره')}${field('hairStatus','وضعیت موی سر')}${field('hairColor','رنگ مو')}${field('beard','محاسن')}${field('appearance','ویژگی خاص','textarea')}
-    <div class="section-title">ارتباط و فضای مجازی</div>
-    ${field('phoneFixed','تلفن ثابت','text',{numeric:true})}${field('phoneMobile','تلفن همراه','text',{numeric:true})}${field('phoneWork','تلفن محل کار','text',{numeric:true})}${field('phoneHome','تلفن منزل','text',{numeric:true})}${field('social','نشانی‌های فضای مجازی','textarea')}
-    <div class="section-title">موضوع گزارش</div>
-    ${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}${field('crimeType','نوع جرم یا تخلف','textarea')}${field('crimeMethod','نحوه ارتکاب و ترتیب وقوع','textarea')}${field('crimePlace','آدرس و مشخصات مکان وقوع','textarea')}${field('crimeDate','زمان وقوع یا زمان احتمالی','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+  return [
+    formSection('مشخصات فردی',
+      `${field('firstName','نام')}${field('lastName','نام خانوادگی')}${field('nationalId','کد ملی','text',{numeric:true})}${field('age','سن','text',{numeric:true})}${choices('gender','جنسیت',['مرد','زن','نامشخص'])}`,
+      'اطلاعات پایه برای شناسایی فرد را وارد کنید.'),
+    formSection('مشخصات ظاهری',
+      `${field('height','قد','text',{numeric:true})}${field('weight','وزن','text',{numeric:true})}${field('face','رنگ چهره')}${field('hairStatus','وضعیت موی سر')}${field('hairColor','رنگ مو')}${field('beard','محاسن')}${field('appearance','ویژگی خاص','textarea')}`,
+      'ویژگی‌های ظاهری قابل مشاهده را ثبت کنید.'),
+    formSection('ارتباط و فضای مجازی',
+      `${field('phoneFixed','تلفن ثابت','text',{numeric:true})}${field('phoneMobile','تلفن همراه','text',{numeric:true})}${field('phoneWork','تلفن محل کار','text',{numeric:true})}${field('phoneHome','تلفن منزل','text',{numeric:true})}${field('social','نشانی‌های فضای مجازی','textarea')}`,
+      'راه‌های ارتباطی یا نشانی‌های مرتبط را وارد کنید.'),
+    formSection('موضوع گزارش',
+      `${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}${field('crimeType','نوع جرم یا تخلف','textarea')}${field('crimeMethod','نحوه ارتکاب و ترتیب وقوع','textarea')}${field('crimePlace','آدرس و مشخصات مکان وقوع','textarea')}${field('crimeDate','زمان وقوع یا زمان احتمالی','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      'جزئیات رخداد و نحوه اطلاع خود را ثبت کنید.')
+  ];
 }
 
 function propertyForm() {
-  return `<div class="section-title">مشخصات ملک</div>
-    ${field('propertyAddress','آدرس ملک','textarea')}${field('owners','مشخصات صاحبان یا ساکنان','textarea')}${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('vehicles','مشخصات خودرو و موتورسیکلت‌های مرتبط','textarea')}${field('security','سیستم حفاظت و کنترل','textarea')}${field('specialSecurity','اقدامات حفاظتی و کنترل خاص','textarea')}${field('activity','نوع فعالیت احتمالی','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+  return [
+    formSection('مشخصات و محل ملک',
+      `${field('propertyAddress','آدرس ملک','textarea')}${field('owners','مشخصات صاحبان یا ساکنان','textarea')}${field('vehicles','مشخصات خودرو و موتورسیکلت‌های مرتبط','textarea')}`,
+      'موقعیت و افراد یا وسایل مرتبط با ملک را وارد کنید.'),
+    formSection('فعالیت و حفاظت ملک',
+      `${field('activity','نوع فعالیت احتمالی','textarea')}${field('security','سیستم حفاظت و کنترل','textarea')}${field('specialSecurity','اقدامات حفاظتی و کنترل خاص','textarea')}`,
+      'وضعیت فعالیت و تمهیدات حفاظتی محل را شرح دهید.'),
+    formSection('موضوع گزارش',
+      `${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      'دلیل گزارش و نحوه اطلاع خود را ثبت کنید.')
+  ];
 }
 
 function objectForm(subtype) {
   if (subtype === 'بسته مشکوک') {
-    return `${field('objectType','نوع شیء مشکوک')}${field('packageAddress','آدرس محل قرارگیری','textarea')}${choices('packageType','نوع بسته‌بندی',['پلمپ','چسب','عادی','نامشخص'])}${field('suspicionReason','علت مشکوک بودن بسته','textarea')}${field('specialSigns','علائم خاص و ویژه','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+    return [
+      formSection('مشخصات بسته',
+        `${field('objectType','نوع شیء مشکوک')}${choices('packageType','نوع بسته‌بندی',['پلمپ','چسب','عادی','نامشخص'])}${field('specialSigns','علائم خاص و ویژه','textarea')}`,
+        'مشخصات قابل مشاهده بسته یا شیء را وارد کنید.'),
+      formSection('محل و علت گزارش',
+        `${field('packageAddress','آدرس محل قرارگیری','textarea')}${field('suspicionReason','علت مشکوک بودن بسته','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        'محل قرارگیری، علت گزارش و نحوه اطلاع خود را ثبت کنید.')
+    ];
   }
   if (subtype === 'خودرو مشکوک') {
-    return `${field('vehicleType','نوع خودرو')}${field('vehicleColor','رنگ')}${field('vehiclePlate','پلاک')}${field('vehicleAddress','محل مشاهده','textarea')}${field('vehicleReason','علت مشکوک بودن خودرو','textarea')}${field('riderAppearance','مشخصات ظاهری راکب','textarea')}${field('vehicleTime','ساعت مشاهده، توقف یا تردد','text')}${field('source','نحوه اطلاع منبع','textarea')}`;
+    return [
+      formSection('مشخصات خودرو',
+        `${field('vehicleType','نوع خودرو')}${field('vehicleColor','رنگ')}${field('vehiclePlate','پلاک')}`,
+        'مشخصات ظاهری و پلاک خودرو را وارد کنید.'),
+      formSection('مشاهده و گزارش',
+        `${field('vehicleAddress','محل مشاهده','textarea')}${field('vehicleReason','علت مشکوک بودن خودرو','textarea')}${field('riderAppearance','مشخصات ظاهری راکب','textarea')}${field('vehicleTime','ساعت مشاهده، توقف یا تردد','text')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        'جزئیات مشاهده خودرو و نحوه اطلاع خود را ثبت کنید.')
+    ];
   }
   if (subtype === 'پرنده') {
-    return `${field('birdType','نوع پرنده')}${field('birdVisible','مشخصات قابل رؤیت','textarea')}${field('birdSound','صدا','textarea')}${field('birdDirection','مسیر حرکت')}${field('birdSpeed','سرعت حرکت')}${choices('birdMotion','متحرک یا ثابت',['متحرک','ثابت','نامشخص'])}${yesNo('birdRepeat','تکرار رؤیت در گذشته')}${field('birdObservation','نحوه مشاهده منبع','textarea')}${field('birdSourceRelation','آشنایی منبع با موضوع','textarea')}${field('birdEvidence','مستندات احتمالی','textarea')}`;
+    return [
+      formSection('مشخصات و حرکت پرنده',
+        `${field('birdType','نوع پرنده')}${field('birdVisible','مشخصات قابل رؤیت','textarea')}${field('birdSound','صدا','textarea')}${field('birdDirection','مسیر حرکت')}${field('birdSpeed','سرعت حرکت')}${choices('birdMotion','متحرک یا ثابت',['متحرک','ثابت','نامشخص'])}`,
+        'ویژگی‌های قابل مشاهده و نحوه حرکت پرنده را وارد کنید.'),
+      formSection('سابقه و مستندات',
+        `${yesNo('birdRepeat','تکرار رؤیت در گذشته')}${field('birdObservation','نحوه مشاهده منبع','textarea')}${field('birdSourceRelation','آشنایی منبع با موضوع','textarea')}${field('birdEvidence','مستندات احتمالی','textarea')}`,
+        'سابقه مشاهده، ارتباط منبع و مستندات احتمالی را ثبت کنید.')
+    ];
   }
   if (subtype === 'کالا') {
-    return `${field('goodsType','نوع کالا')}${field('goodsBrand','برند یا سازنده')}${field('goodsModel','مدل یا مشخصات')}${field('goodsQuantity','تعداد','text',{numeric:true})}${field('goodsPackaging','نوع بسته‌بندی')}${field('goodsOrigin','مبدأ یا محل تهیه')}${field('goodsDestination','مقصد یا محل نگهداری','textarea')}${field('goodsReason','علت اهمیت یا مشکوک بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+    return [
+      formSection('مشخصات کالا',
+        `${field('goodsType','نوع کالا')}${field('goodsBrand','برند یا سازنده')}${field('goodsModel','مدل یا مشخصات')}${field('goodsQuantity','تعداد','text',{numeric:true})}${field('goodsPackaging','نوع بسته‌بندی')}`,
+        'مشخصات اصلی کالا را وارد کنید.'),
+      formSection('مبدأ، مقصد و گزارش',
+        `${field('goodsOrigin','مبدأ یا محل تهیه')}${field('goodsDestination','مقصد یا محل نگهداری','textarea')}${field('goodsReason','علت اهمیت یا مشکوک بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        'مسیر کالا، علت گزارش و نحوه اطلاع خود را ثبت کنید.')
+    ];
   }
-  return `${field('starlinkAddress','آدرس محل نصب آنتن','textarea')}${field('starlinkOwners','مشخصات صاحبان و استفاده‌کنندگان','textarea')}${field('starlinkReason','علت استفاده','textarea')}${field('starlinkAppearance','مشخصات ظاهری آنتن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}${field('sourceRelation','زمان و نحوه آشنایی منبع با موضوع','textarea')}`;
+  return [
+    formSection('محل و مشخصات آنتن',
+      `${field('starlinkAddress','آدرس محل نصب آنتن','textarea')}${field('starlinkOwners','مشخصات صاحبان و استفاده‌کنندگان','textarea')}${field('starlinkAppearance','مشخصات ظاهری آنتن','textarea')}`,
+      'محل نصب و مشخصات قابل مشاهده آنتن را وارد کنید.'),
+    formSection('علت استفاده و منبع',
+      `${field('starlinkReason','علت استفاده','textarea')}${field('source','نحوه اطلاع منبع','textarea')}${field('sourceRelation','زمان و نحوه آشنایی منبع با موضوع','textarea')}`,
+      'علت استفاده و نحوه اطلاع یا آشنایی خود با موضوع را ثبت کنید.')
+  ];
 }
 
 function phenomenonForm(subtype) {
   if (subtype === 'تجمع، تحصن یا اغتشاش') {
-    return `${field('phenomenonAddress','آدرس و محل وقوع','textarea')}${field('participantCount','تعداد افراد حاضر و شرکت‌کننده','text',{numeric:true})}${field('participantActions','اقدامات شرکت‌کنندگان','textarea')}${field('signsSlogans','دستنوشته‌ها، شعارها و خواسته‌ها','textarea')}${field('leaders','مشخصات لیدرها','textarea')}${field('futureActions','اقدامات احتمالی آینده','textarea')}${field('callMethod','نحوه فراخوان و اطلاع‌رسانی','textarea')}${field('formation','نحوه شکل‌گیری پدیده','textarea')}${yesNo('history','سابقه قبلی پدیده')}${field('source','نحوه اطلاع منبع','textarea')}`;
+    return [
+      formSection('محل و حاضران',
+        `${field('phenomenonAddress','آدرس و محل وقوع','textarea')}${field('participantCount','تعداد افراد حاضر و شرکت‌کننده','text',{numeric:true})}`,
+        'محل رخداد و تعداد تقریبی افراد حاضر را وارد کنید.'),
+      formSection('وضعیت تجمع',
+        `${field('participantActions','اقدامات شرکت‌کنندگان','textarea')}${field('signsSlogans','دستنوشته‌ها، شعارها و خواسته‌ها','textarea')}${field('leaders','مشخصات لیدرها','textarea')}${field('futureActions','اقدامات احتمالی آینده','textarea')}${field('formation','نحوه شکل‌گیری پدیده','textarea')}${yesNo('history','سابقه قبلی پدیده')}`,
+        'روند شکل‌گیری، وضعیت فعلی و اقدامات احتمالی را شرح دهید.'),
+      formSection('اطلاع‌رسانی و منبع',
+        `${field('callMethod','نحوه فراخوان و اطلاع‌رسانی','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        'روش اطلاع‌رسانی و نحوه اطلاع خود را ثبت کنید.')
+    ];
   }
-  return `${field('eventAddress','آدرس و محل رخداد','textarea')}${field('importance','اهمیت مکان مورد تهدید','textarea')}${field('damage','خسارت‌های جانی و مالی و تخریب','textarea')}${field('suspects','مشخصات مظنونین احتمالی','textarea')}${field('responders','حضور یا عدم حضور نیروهای خدماتی و مأمورین','textarea')}${field('eventCause','نحوه وقوع و چگونگی آغاز و گسترش','textarea')}${field('intent','انگیزه یا عامل احتمالی در صورت عمدی بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+  return [
+    formSection('محل و خسارت',
+      `${field('eventAddress','آدرس و محل رخداد','textarea')}${field('importance','اهمیت مکان مورد تهدید','textarea')}${field('damage','خسارت‌های جانی و مالی و تخریب','textarea')}`,
+      'محل رخداد و خسارت‌های واردشده را ثبت کنید.'),
+    formSection('عوامل و نحوه وقوع',
+      `${field('suspects','مشخصات مظنونین احتمالی','textarea')}${field('responders','حضور یا عدم حضور نیروهای خدماتی و مأمورین','textarea')}${field('eventCause','نحوه وقوع و چگونگی آغاز و گسترش','textarea')}${field('intent','انگیزه یا عامل احتمالی در صورت عمدی بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      'عوامل احتمالی، نحوه رخداد و منبع اطلاع را وارد کنید.')
+  ];
 }
 
 function orgForm() {
-  return `${field('orgName','نام نهاد یا سازمان')}${choices('orgType','نوع نهاد یا سازمان',['دولتی','خصوصی','نظامی','انتظامی','عمومی','غیردولتی','نامشخص'])}${field('orgAddress','محل و آدرس','textarea')}${field('orgActivity','حوزه و نوع فعالیت','textarea')}${field('orgManager','مسئول یا مدیر مرتبط')}${field('orgPeople','افراد مرتبط','textarea')}${field('orgReason','موضوع و علت گزارش','textarea')}${field('orgActions','اقدامات یا نحوه وقوع','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`;
+  return [
+    formSection('مشخصات نهاد یا سازمان',
+      `${field('orgName','نام نهاد یا سازمان')}${choices('orgType','نوع نهاد یا سازمان',['دولتی','خصوصی','نظامی','انتظامی','عمومی','غیردولتی','نامشخص'])}${field('orgAddress','محل و آدرس','textarea')}`,
+      'نام، نوع و نشانی نهاد یا سازمان را وارد کنید.'),
+    formSection('فعالیت و افراد مرتبط',
+      `${field('orgActivity','حوزه و نوع فعالیت','textarea')}${field('orgManager','مسئول یا مدیر مرتبط')}${field('orgPeople','افراد مرتبط','textarea')}`,
+      'حوزه فعالیت و افراد مرتبط را ثبت کنید.'),
+    formSection('موضوع و منبع گزارش',
+      `${field('orgReason','موضوع و علت گزارش','textarea')}${field('orgActions','اقدامات یا نحوه وقوع','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      'موضوع گزارش و نحوه اطلاع خود را شرح دهید.')
+  ];
+}
+
+function nextFormSection() {
+  const sections = buildForm(state.category, state.subtype);
+  if (state.formStep >= sections.length - 1) return continueForm();
+  collectForm();
+  state.formStep += 1;
+  renderFormSection(sections);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function previousFormSection() {
+  if (state.formStep === 0) return;
+  collectForm();
+  state.formStep -= 1;
+  renderFormSection();
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function pickChoice(button, name, value) {
@@ -161,14 +296,17 @@ function pickChoice(button, name, value) {
 }
 
 function collectForm() {
-  const data = {};
+  const data = { ...state.form };
+  delete data.priority;
   document.querySelectorAll('#formBody [data-field]').forEach(element => {
     const value = element.value.trim();
     if (value) data[element.dataset.field] = value;
+    else delete data[element.dataset.field];
   });
   document.querySelectorAll('#formBody [data-choice]').forEach(row => {
     const selected = row.querySelector('.selected');
-    if (selected) data[row.dataset.choice] = selected.dataset.value;
+    if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
+    else delete data[row.dataset.choice];
   });
   state.form = data;
 }
@@ -180,7 +318,10 @@ function restoreFormValues() {
     const row = document.querySelector(`#formBody [data-choice="${CSS.escape(name)}"]`);
     if (row) {
       row.querySelectorAll('.choice-btn').forEach(button => {
-        if (button.textContent.trim() === value) button.classList.add('selected');
+        if (button.textContent.trim() === value) {
+          button.classList.add('selected');
+          button.dataset.value = value;
+        }
       });
     }
   });
@@ -193,6 +334,8 @@ function continueForm() {
 }
 
 function backFromForm() {
+  if (state.formStep > 0) return previousFormSection();
+  collectForm();
   if (state.category === 'شیء') return showPage('objectTypePage');
   if (state.category === 'پدیده اجتماعی') return showPage('phenomenonTypePage');
   showPage('categoryPage');

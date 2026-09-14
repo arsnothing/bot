@@ -340,3 +340,117 @@ html,body{background:var(--bg);color:var(--text)}
   border-color:#2c5142!important;
   color:#fff!important;
 }
+
+/* فرم گزارش: هر بخش در یک گام مجزا و آرام نمایش داده می‌شود. */
+#formPage .form-section-progress{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:0 0 14px;
+  padding:11px 13px;
+  border:1px solid #dfe9e3;
+  border-radius:13px;
+  background:#f8fbf9;
+}
+#formPage .form-section-progress > span{
+  flex:0 0 auto;
+  color:#52635a;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+#formPage .form-section-progress-track{
+  flex:1;
+  height:6px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#dfe9e3;
+}
+#formPage .form-section-progress-track span{
+  display:block;
+  width:var(--form-progress);
+  height:100%;
+  border-radius:inherit;
+  background:var(--green);
+  transition:width .24s ease;
+}
+#formPage .form-section-card{
+  padding:20px;
+  border:1px solid #e1e9e4;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(24,58,45,.045);
+}
+#formPage .form-section-heading{
+  padding-bottom:15px;
+  border-bottom:1px solid #e5ece8;
+}
+#formPage .form-section-heading h2{
+  margin:0;
+  color:var(--green-dark);
+  font-size:19px;
+  font-weight:900;
+  line-height:1.6;
+}
+#formPage .form-section-heading p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.9;
+}
+#formPage .form-section-fields{margin-top:16px}
+#formPage .form-section-fields .field-group{margin:0 0 17px}
+#formPage .form-section-fields .field-group:last-child{margin-bottom:0}
+#formPage .form-section-fields .field-input,
+#formPage .form-section-fields .field-textarea{
+  border-color:#dce6e0!important;
+  border-radius:12px!important;
+}
+#formPage .form-section-fields .field-textarea{min-height:116px}
+#formPage .form-actions{
+  display:flex;
+  align-items:stretch;
+  gap:10px;
+  margin-top:16px;
+}
+#formPage .form-actions .primary-button{
+  flex:1;
+  width:auto;
+  min-width:0;
+}
+#formPage .secondary-button{
+  flex:0 0 35%;
+  min-height:52px;
+  border:1px solid #cbdcd2;
+  border-radius:11px;
+  background:#fff;
+  color:var(--green-dark);
+  font-weight:800;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease;
+}
+#formPage .secondary-button:hover{
+  border-color:#9bb9a9;
+  background:var(--green-soft);
+  color:var(--green);
+  transform:translateY(-1px);
+}
+#formPage .secondary-button:active{transform:translateY(1px) scale(.99)}
+#formPage .secondary-button:focus-visible,
+#formPage .form-actions .primary-button:focus-visible{
+  outline:3px solid rgba(36,75,59,.22);
+  outline-offset:2px;
+}
+@media(max-width:430px){
+  #formPage .form-section-progress{gap:9px;padding:10px 11px}
+  #formPage .form-section-progress > span{font-size:11px}
+  #formPage .form-section-card{padding:17px 14px;border-radius:16px}
+  #formPage .form-section-heading h2{font-size:18px}
+  #formPage .form-section-fields{margin-top:14px}
+  #formPage .form-section-fields .field-group{margin-bottom:15px}
+  #formPage .form-actions{gap:8px}
+  #formPage .secondary-button{flex-basis:40%;font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  #formPage .form-section-progress-track span,
+  #formPage .secondary-button{transition:none}
+}

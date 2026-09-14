@@ -84,7 +84,7 @@ require __DIR__ . '/includes/header.php';
     <div class="stepper"><span class="active">فرم</span><i></i><span>زمان</span><i></i><span>مکان</span><i></i><span>تصویر</span></div>
     <div class="page-head"><h1 id="formTitle">ثبت گزارش</h1></div>
     <div id="formBody"></div>
-    <div class="form-actions"><button class="primary-button" onclick="continueForm()" type="button">تأیید فرم</button></div>
+    <div id="formActions" class="form-actions"></div>
   </main>
 </section>
 
