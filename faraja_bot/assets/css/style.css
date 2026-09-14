@@ -14,7 +14,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .welcome h1{margin:0 0 12px;font-size:23px;color:#4f5a54}.welcome p{margin:0;font-size:15px;line-height:2.15;color:#606b65}.signature{margin-top:18px;color:var(--muted);font-size:13px;line-height:2;font-weight:700;text-align: center;}
 .home-buttons{width:100%;margin-top:17px}.main-card{width:100%;min-height:74px;border:0;border-radius:19px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 12px 26px rgba(36,75,59,.18);transition:transform .12s,box-shadow .12s}.main-card strong{font-size:17px}.main-card:active,.category-card:active,.option-card:active,.choice-btn:active,.primary-button:active{transform:scale(.985)}
 .main-icon{width:27px;height:27px}
-.back-button{border:0;background:transparent;color:var(--green);display:flex;align-items:center;gap:10px;padding:7px 0;margin-bottom:9px;font-weight:800}.back-arrow{width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(135deg)}
+.back-button{border:0;background:transparent;color:var(--green);display:flex;align-items:center;gap:10px;padding:7px 0;margin-bottom:9px;font-weight:800}
 .back-button:hover,
 .back-button:focus,
 .back-button:active{
@@ -54,9 +54,6 @@ button,input,textarea{font:inherit}button{cursor:pointer}
   line-height:1;
   transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
 }
-#categoryPage .back-button .back-arrow, #objectTypePage .back-button .back-arrow,
-#phenomenonTypePage .back-button .back-arrow, #formPage .back-button .back-arrow,
-#timePage .back-button .back-arrow, #locationPage .back-button .back-arrow, #documentsPage .back-button .back-arrow { display:none; }
 #categoryPage .back-button:hover, #objectTypePage .back-button:hover, #phenomenonTypePage .back-button:hover,
 #formPage .back-button:hover, #timePage .back-button:hover, #locationPage .back-button:hover, #documentsPage .back-button:hover {
   background:var(--green-soft);
@@ -282,7 +279,6 @@ html,body{background:var(--bg);color:var(--text)}
   box-shadow:0 7px 16px rgba(36,75,59,.08)!important
 }
 .back-button:active{transform:translateY(1px) scale(.99)}
-.back-arrow{display:none!important}
 
 .stepper span{background:#eef3ef}
 .stepper span.active{background:var(--green)}
@@ -467,4 +463,135 @@ html,body{background:var(--bg);color:var(--text)}
   #formPage .form-section-progress-track span,
   #formPage .secondary-button,
   #formPage .form-section-fields .field-textarea{transition:none}
+}
+
+/* مجموعهٔ آیکون‌های یکدست دکمه‌ها */
+.icon-sprite{
+  position:absolute;
+  width:0;
+  height:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.button-icon,
+.category-icon,
+.subtype-svg,
+.mini-svg{
+  display:block;
+  flex:0 0 auto;
+  fill:none;
+  stroke:currentColor;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.button-with-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.main-card.button-with-icon{display:flex}
+.main-card .main-icon{
+  width:22px;
+  height:22px;
+}
+.back-button .back-icon{
+  width:18px;
+  height:18px;
+  color:currentColor;
+}
+#categoryPage .category-card .category-icon{
+  width:52px;
+  height:52px;
+  padding:12px;
+  border:1px solid #d3e1d8;
+  border-radius:16px;
+  background:#fff;
+  color:var(--green)!important;
+  stroke:currentColor!important;
+}
+#categoryPage .category-card:hover .category-icon{
+  background:#f9fcfa;
+  border-color:#bfd4c7;
+}
+#objectTypePage .option-card .subtype-svg,
+#phenomenonTypePage .option-card .subtype-svg{
+  width:52px;
+  height:52px;
+  padding:12px;
+  border:1px solid #d5e3da;
+  border-radius:15px;
+  background:var(--green-soft);
+  color:var(--green);
+  stroke:currentColor;
+}
+#timePage .time-choices .choice-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+#timePage .time-choices .button-icon{
+  width:18px;
+  height:18px;
+}
+#locationPage .location-choice .mini-svg{
+  width:30px;
+  height:30px;
+  padding:6px;
+  border-radius:9px;
+  background:var(--green-soft);
+  color:var(--green);
+}
+#locationPage .location-choice:hover .mini-svg{
+  background:#dcece2;
+}
+.primary-button .action-icon{
+  width:19px;
+  height:19px;
+}
+#formPage .form-actions .primary-button,
+#formPage .secondary-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+#formPage .form-actions .action-icon,
+#formPage .secondary-button .action-icon{
+  width:18px;
+  height:18px;
+}
+#documentsPage .document-upload .upload-icon{
+  width:46px;
+  height:46px;
+  color:var(--green);
+}
+.document-item .document-delete-button{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:#9d3535;
+  font-weight:800;
+  padding:7px;
+}
+.document-item .document-delete-button:hover{
+  background:#fff1f1;
+}
+.document-item .delete-icon{
+  width:16px;
+  height:16px;
+}
+@media(max-width:430px){
+  #categoryPage .category-card .category-icon,
+  #objectTypePage .option-card .subtype-svg,
+  #phenomenonTypePage .option-card .subtype-svg{
+    width:47px;
+    height:47px;
+    padding:11px;
+  }
+  #timePage .time-choices .button-icon{width:17px;height:17px}
 }

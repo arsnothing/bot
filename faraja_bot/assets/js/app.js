@@ -12,6 +12,11 @@ let reportMap = null;
 let marker = null;
 
 const forms = {};
+
+function iconMarkup(name, className = 'button-icon') {
+  return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
+}
+
 const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 const EN_DIGITS = '0123456789';
 const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
@@ -217,10 +222,12 @@ function renderFormSection(sections = buildForm(state.category, state.subtype)) 
     </section>`;
 
   const actions = document.getElementById('formActions');
+  const primaryLabel = isLast ? 'تأیید فرم' : 'مرحله بعد';
+  const primaryIcon = isLast ? iconMarkup('check', 'button-icon action-icon') : iconMarkup('arrow-next', 'button-icon action-icon');
   actions.className = `form-actions${state.formStep === 0 ? ' first-step' : ''}`;
   actions.innerHTML = `
-    ${state.formStep > 0 ? '<button class="secondary-button" onclick="previousFormSection()" type="button">مرحله قبل</button>' : ''}
-    <button class="primary-button" onclick="${isLast ? 'continueForm()' : 'nextFormSection()'}" type="button">${isLast ? 'تأیید فرم' : 'مرحله بعد'}</button>`;
+    ${state.formStep > 0 ? `<button class="secondary-button button-with-icon" onclick="previousFormSection()" type="button">${iconMarkup('arrow-previous', 'button-icon action-icon')}<span>مرحله قبل</span></button>` : ''}
+    <button class="primary-button button-with-icon" onclick="${isLast ? 'continueForm()' : 'nextFormSection()'}" type="button"><span>${primaryLabel}</span>${primaryIcon}</button>`;
 
   restoreFormValues();
   setTimeout(normalizeVisibleNumbers, 0);
@@ -578,7 +585,7 @@ function renderDocuments() {
     <div class="document-item">
       <img src="${document.data}" alt="">
       <span>${document.name}</span>
-      <button type="button" onclick="removeDocument(${index})">حذف</button>
+      <button class="document-delete-button" type="button" aria-label="حذف تصویر ${faDigits(index + 1)}" onclick="removeDocument(${index})">${iconMarkup('trash', 'button-icon delete-icon')}<span>حذف</span></button>
     </div>`).join('');
 }
 
