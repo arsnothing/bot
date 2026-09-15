@@ -154,8 +154,43 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div id="mapWrap" class="map-wrap"><div id="reportMap"></div></div>
     <div id="locationFields" class="location-fields"></div>
+    <div id="propertyLocationFormBody" class="property-location-form-body" hidden></div>
     <div id="locationStatus" class="status" aria-live="polite"></div>
-    <button class="primary-button page-action" onclick="continueLocation()" type="button">تایید مکان وقوع</button>
+    <button id="locationContinueButton" class="primary-button page-action" onclick="continueLocation()" type="button">تایید مکان وقوع</button>
+  </main>
+</section>
+
+<section id="propertyVehiclesPage" class="page">
+  <main class="shell form-shell">
+    <button class="back-button button-with-icon" onclick="backFromPropertyVehicles()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>مکان وقوع</h1></div>
+    <section class="property-location-stage" aria-labelledby="propertyVehiclesStageTitle">
+      <header class="property-location-stage-heading">
+        <span class="property-location-stage-count">بخش ۲ از ۳</span>
+        <h2 id="propertyVehiclesStageTitle">اطلاعات خودرو یا موتورسیکلت</h2>
+        <p>برای هر خودرو یا موتورسیکلت، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.</p>
+      </header>
+      <div id="propertyVehiclesBody" class="property-location-stage-body"></div>
+    </section>
+    <button class="primary-button page-action" onclick="continuePropertyVehicles()" type="button">مرحله بعد</button>
+  </main>
+</section>
+
+<section id="propertySecurityPage" class="page">
+  <main class="shell form-shell">
+    <button class="back-button button-with-icon" onclick="backFromPropertySecurity()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>مکان وقوع</h1></div>
+    <section class="property-location-stage" aria-labelledby="propertySecurityStageTitle">
+      <header class="property-location-stage-heading">
+        <span class="property-location-stage-count">بخش ۳ از ۳</span>
+        <h2 id="propertySecurityStageTitle">اقدامات حفاظتی ملک</h2>
+        <p>وضعیت حفاظت و مراقبتی ملک را شرح دهید.</p>
+      </header>
+      <div id="propertySecurityBody" class="property-location-stage-body"></div>
+    </section>
+    <button class="primary-button page-action" onclick="continuePropertySecurity()" type="button">تایید مکان وقوع</button>
   </main>
 </section>
 

@@ -426,39 +426,133 @@ html,body{background:var(--bg);color:var(--text)}
   transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
 }
 #formPage .choice-row--three{grid-template-columns:repeat(3,minmax(0,1fr))}
-/* شناسه و ظاهر مالکین، ساکنین و ترددکنندگان در گزارش املاک */
-#formPage .property-person-group{
-  margin:0 0 14px;
-  padding:14px;
-  border:1px solid #dfe9e3;
-  border-radius:14px;
-  background:#fbfdfc;
+/* سه زیرمرحلهٔ مکان وقوع در گزارش املاک */
+.property-location-form-body{margin-top:16px}
+.property-location-stage{
+  margin:0 0 15px;
+  padding:20px;
+  border:1px solid #e1e9e4;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(24,58,45,.045);
 }
-#formPage .property-person-group:last-child{margin-bottom:0}
-#formPage .property-person-group-title{
+.property-location-stage-heading{
+  padding-bottom:15px;
+  border-bottom:1px solid #e5ece8;
+}
+.property-location-stage-count{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  margin:0 0 7px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:var(--green-soft);
+  color:var(--green-dark);
+  font-size:10px;
+  font-weight:900;
+}
+.property-location-stage-heading h2{
+  margin:0;
+  color:var(--green-dark);
+  font-size:19px;
+  font-weight:900;
+  line-height:1.6;
+}
+.property-location-stage-heading p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.9;
+}
+.property-location-stage-body{margin-top:16px}
+.property-location-stage .field-group{margin:0 0 17px}
+.property-location-stage .field-group:last-child{margin-bottom:0}
+.property-location-stage .field-input,
+.property-location-stage .field-textarea{
+  border-color:#dce6e0!important;
+  border-radius:12px!important;
+}
+.property-location-stage .field-input.numeric{
+  direction:ltr;
+  text-align:right;
+}
+.property-location-stage .field-textarea{
+  min-height:52px;
+  height:52px;
+  max-height:280px;
+  overflow-y:hidden;
+  resize:none;
+  line-height:1.7;
+  transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.property-location-stage .choice-row--three{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* بسته‌های قابل‌افزودن مالکین، ساکنین و ترددکنندگان */
+.property-person-role-section{
+  margin:0;
+  padding:16px 0 2px;
+  border-top:1px solid #e1ebe5;
+}
+.property-person-role-section:first-child{
+  padding-top:0;
+  border-top:0;
+}
+.property-person-group-title{
   margin:0 0 12px;
-  padding-bottom:8px;
-  border-bottom:1px solid #e1ebe5;
   color:var(--green-dark);
   font-size:14px;
   font-weight:900;
   line-height:1.55;
 }
-#formPage .property-person-basic-fields{
+.property-person-package-list{display:grid;gap:10px}
+.property-person-package{
+  padding:14px;
+  border:1px solid #dfe9e3;
+  border-radius:14px;
+  background:#fbfdfc;
+}
+.property-person-package-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+  padding-bottom:8px;
+  border-bottom:1px solid #e1ebe5;
+}
+.property-person-package-heading h4{
+  margin:0;
+  color:#466154;
+  font-size:13px;
+  font-weight:900;
+}
+.property-person-remove-button{
+  flex:0 0 auto;
+  padding:6px 8px;
+  border:1px solid #efd3d3;
+  border-radius:9px;
+  background:#fff;
+  color:#994040;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.property-person-remove-button:hover{background:#fff6f6;border-color:#e9bbbb}
+.property-person-basic-fields{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:0 10px;
 }
-#formPage .property-person-basic-fields .field-group{
-  min-width:0;
-}
-#formPage .property-person-role-toggles{
+.property-person-basic-fields .field-group{min-width:0}
+.property-person-role-toggles{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:8px;
   margin:-2px 0 13px;
 }
-#formPage .property-person-role-toggle{
+.property-person-role-toggle{
   display:flex;
   align-items:center;
   justify-content:flex-start;
@@ -473,23 +567,48 @@ html,body{background:var(--bg);color:var(--text)}
   font-weight:800;
   cursor:pointer;
 }
-#formPage .property-person-role-toggle input{
+.property-person-role-toggle input{
   width:17px;
   height:17px;
   margin:0;
   accent-color:var(--green);
 }
-#formPage .property-person-appearance-title{
+.property-person-appearance-title{
   margin:1px 0 10px;
   color:#466154;
   font-size:12px;
   font-weight:900;
 }
-#formPage .property-person-appearance-fields .field-group:last-child{margin-bottom:0}
+.property-person-appearance-fields .field-group:last-child{margin-bottom:0}
+.property-person-add-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  min-height:44px;
+  margin-top:10px;
+  padding:8px 12px;
+  border:1px dashed #aac6b4;
+  border-radius:11px;
+  background:#f7fbf8;
+  color:var(--green-dark);
+  font-family:inherit;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+  transition:border-color .18s ease,background-color .18s ease,transform .18s ease;
+}
+.property-person-add-button:hover{border-color:#7fae90;background:#eff8f2}
+.property-person-add-button:active{transform:translateY(1px)}
+.property-person-add-button:disabled{cursor:not-allowed;opacity:.58}
+.property-person-add-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
 @media(max-width:430px){
-  #formPage .property-person-group{padding:12px}
-  #formPage .property-person-basic-fields{gap:0 8px}
-  #formPage .property-person-role-toggles{grid-template-columns:1fr}
+  .property-location-stage{padding:17px 14px;border-radius:16px}
+  .property-location-stage-heading h2{font-size:18px}
+  .property-person-package{padding:12px}
+  .property-person-basic-fields{gap:0 8px}
+  .property-person-role-toggles{grid-template-columns:1fr}
 }
 #formPage .social-links-field{
   margin-top:4px;
@@ -1583,6 +1702,88 @@ html,body{background:var(--bg);color:var(--text)}
   font-size:10px;
 }
 
+
+/* صفحات مستقل مرحله‌های دوم و سوم مکان وقوعِ املاک */
+:is(#propertyVehiclesPage,#propertySecurityPage){background:var(--bg)}
+:is(#propertyVehiclesPage,#propertySecurityPage) .shell{max-width:760px}
+:is(#propertyVehiclesPage,#propertySecurityPage) .back-button{
+  width:128px;
+  min-height:48px;
+  padding:0 18px;
+  margin:0 0 12px auto;
+  justify-content:center;
+  border:1px solid var(--border);
+  border-radius:15px;
+  background:#fff;
+  color:var(--green);
+  box-shadow:0 5px 14px rgba(24,58,45,.07);
+  font-size:14px;
+  font-weight:900;
+  line-height:1;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,background .16s ease;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .back-button:hover{
+  background:var(--green-soft);
+  border-color:#cbdad2;
+  box-shadow:0 8px 18px rgba(24,58,45,.10);
+  color:var(--green);
+  transform:translateY(-1px);
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .back-button:active{transform:translateY(1px)}
+:is(#propertyVehiclesPage,#propertySecurityPage) .page-head{padding:8px 2px 17px}
+:is(#propertyVehiclesPage,#propertySecurityPage) .page-head h1{
+  color:var(--green-dark);
+  font-size:22px;
+  font-weight:900;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .stepper{margin:3px 0 16px}
+:is(#propertyVehiclesPage,#propertySecurityPage) .stepper span{background:#eef2ef;color:#77817b}
+:is(#propertyVehiclesPage,#propertySecurityPage) .stepper span.active{background:var(--green);color:#fff}
+:is(#propertyVehiclesPage,#propertySecurityPage) .stepper span.done{background:var(--green-soft);color:var(--green)}
+:is(#propertyVehiclesPage,#propertySecurityPage) .stepper i{background:var(--border)}
+:is(#propertyVehiclesPage,#propertySecurityPage) .field-group label{color:#34443b}
+:is(#propertyVehiclesPage,#propertySecurityPage) .field-input,
+:is(#propertyVehiclesPage,#propertySecurityPage) .field-textarea{
+  border-color:var(--border)!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .field-input:focus,
+:is(#propertyVehiclesPage,#propertySecurityPage) .field-textarea:focus{
+  border-color:#9bb9a9!important;
+  box-shadow:0 0 0 3px rgba(36,75,59,.08)!important;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .choice-btn{
+  border-color:var(--border)!important;
+  background:#fff!important;
+  color:var(--text);
+  box-shadow:none!important;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .choice-btn:hover{border-color:#b9cbc0!important;background:#fbfdfc!important}
+:is(#propertyVehiclesPage,#propertySecurityPage) .choice-btn.selected{
+  border-color:var(--green)!important;
+  background:var(--green)!important;
+  color:#fff!important;
+  box-shadow:0 7px 16px rgba(36,75,59,.14)!important;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .primary-button{
+  background:var(--green)!important;
+  box-shadow:0 9px 21px rgba(36,75,59,.15)!important;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease;
+}
+:is(#propertyVehiclesPage,#propertySecurityPage) .primary-button:hover{transform:translateY(-1px)}
+@media(max-width:430px){
+  :is(#propertyVehiclesPage,#propertySecurityPage) .back-button{width:120px;min-height:46px}
+  :is(#propertyVehiclesPage,#propertySecurityPage) .page-head h1{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#propertyVehiclesPage,#propertySecurityPage) .back-button,
+  :is(#propertyVehiclesPage,#propertySecurityPage) .primary-button,
+  .property-location-stage .field-textarea,
+  .property-person-add-button{transition:none}
+}
+
 #locationPage .location-actions{margin-bottom:12px}
 #locationPage .location-choice{
   min-height:52px;
@@ -1600,31 +1801,57 @@ html,body{background:var(--bg);color:var(--text)}
   font-size:12px;
   line-height:1.8;
 }
-#locationPage .location-address-field{margin-top:15px}
 #locationPage .location-region-fields{display:grid;gap:15px}
-#locationPage .location-address-field .field-textarea{
-  min-height:72px;
-  max-height:280px;
-  overflow-y:hidden;
-  resize:none;
-  transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
+#locationPage .location-details-section{
+  margin-top:15px;
+  padding:16px;
+  border:1px solid #dfe9e3;
+  border-radius:15px;
+  background:#fbfdfc;
+}
+#locationPage .location-details-title{
+  margin:0 0 13px;
+  padding-bottom:9px;
+  border-bottom:1px solid #e1ebe5;
+  color:var(--green-dark);
+  font-size:15px;
+  font-weight:900;
+  line-height:1.55;
+}
+#locationPage .location-details-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px 10px;
+}
+#locationPage .location-details-grid .field-group{min-width:0;margin:0}
+#locationPage .location-details-grid .field-input{
+  border-color:#dce6e0;
+  border-radius:12px;
+}
+#locationPage .location-details-grid .field-input.numeric{
+  direction:ltr;
+  text-align:right;
+}
+@media(max-width:430px){
+  #locationPage .location-details-section{padding:14px}
+  #locationPage .location-details-grid{grid-template-columns:1fr;gap:12px}
 }
 
-#formPage .vehicle-collection{
+:is(#formPage,#propertyVehiclesPage) .vehicle-collection{
   display:grid;
   gap:12px;
 }
-#formPage .vehicle-card-list{
+:is(#formPage,#propertyVehiclesPage) .vehicle-card-list{
   display:grid;
   gap:12px;
 }
-#formPage .vehicle-card{
+:is(#formPage,#propertyVehiclesPage) .vehicle-card{
   padding:14px;
   border:1px solid #d9e5de;
   border-radius:15px;
   background:#f8fbf9;
 }
-#formPage .vehicle-card-heading{
+:is(#formPage,#propertyVehiclesPage) .vehicle-card-heading{
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -1633,15 +1860,15 @@ html,body{background:var(--bg);color:var(--text)}
   padding-bottom:10px;
   border-bottom:1px solid #e1ebe5;
 }
-#formPage .vehicle-card-heading h3{
+:is(#formPage,#propertyVehiclesPage) .vehicle-card-heading h3{
   margin:0;
   color:var(--green-dark);
   font-size:14px;
   font-weight:900;
 }
-#formPage .vehicle-card-fields{display:grid;gap:0}
-#formPage .vehicle-remove-button,
-#formPage .vehicle-add-button{
+:is(#formPage,#propertyVehiclesPage) .vehicle-card-fields{display:grid;gap:0}
+:is(#formPage,#propertyVehiclesPage) .vehicle-remove-button,
+:is(#formPage,#propertyVehiclesPage) .vehicle-add-button{
   border:1px solid #ccdcd3;
   border-radius:9px;
   background:#fff;
@@ -1652,38 +1879,38 @@ html,body{background:var(--bg);color:var(--text)}
   cursor:pointer;
   transition:border-color .18s ease,background-color .18s ease,transform .18s ease;
 }
-#formPage .vehicle-remove-button{
+:is(#formPage,#propertyVehiclesPage) .vehicle-remove-button{
   padding:6px 8px;
   border-color:#efd3d3;
   color:#994040;
 }
-#formPage .vehicle-remove-button:hover{background:#fff6f6;border-color:#e9bbbb}
-#formPage .vehicle-add-button{
+:is(#formPage,#propertyVehiclesPage) .vehicle-remove-button:hover{background:#fff6f6;border-color:#e9bbbb}
+:is(#formPage,#propertyVehiclesPage) .vehicle-add-button{
   min-height:45px;
   margin-top:2px;
   padding:9px 12px;
   border-style:dashed;
 }
-#formPage .vehicle-add-button:hover{border-color:#9dbbaa;background:#f3f9f5}
-#formPage .vehicle-add-button:active,
-#formPage .vehicle-remove-button:active{transform:translateY(1px)}
-#formPage .vehicle-add-button:disabled{cursor:not-allowed;opacity:.58}
+:is(#formPage,#propertyVehiclesPage) .vehicle-add-button:hover{border-color:#9dbbaa;background:#f3f9f5}
+:is(#formPage,#propertyVehiclesPage) .vehicle-add-button:active,
+:is(#formPage,#propertyVehiclesPage) .vehicle-remove-button:active{transform:translateY(1px)}
+:is(#formPage,#propertyVehiclesPage) .vehicle-add-button:disabled{cursor:not-allowed;opacity:.58}
 
-#formPage .vehicle-plate-field{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-field{
   padding:14px;
   border:1px solid #dce7e1;
   border-radius:14px;
   background:#fff;
 }
-#formPage .vehicle-plate-field > label:first-child{margin-bottom:5px}
-#formPage .vehicle-plate-description{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-field > label:first-child{margin-bottom:5px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-description{
   margin:0 0 10px;
   color:#718078;
   font-size:11px;
   line-height:1.75;
 }
-#formPage .vehicle-plate-field .searchable-select-field{margin:0}
-#formPage .vehicle-no-plate{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-field .searchable-select-field{margin:0}
+:is(#formPage,#propertyVehiclesPage) .vehicle-no-plate{
   display:inline-flex;
   align-items:center;
   gap:7px;
@@ -1693,27 +1920,27 @@ html,body{background:var(--bg);color:var(--text)}
   font-weight:700;
   cursor:pointer;
 }
-#formPage .vehicle-no-plate input{
+:is(#formPage,#propertyVehiclesPage) .vehicle-no-plate input{
   width:17px;
   height:17px;
   margin:0;
   accent-color:var(--green);
 }
-#formPage .vehicle-plate-editor{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-editor{
   margin-top:12px;
   padding:12px;
   border:1px solid #dce7e1;
   border-radius:12px;
   background:#fbfdfc;
 }
-#formPage .vehicle-plate-editor--empty{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-editor--empty{
   padding:11px 12px;
   border-style:dashed;
   background:#fbfcfb;
 }
-#formPage .vehicle-plate-editor--empty p{margin:0;color:#77857d;font-size:11px;line-height:1.75}
-#formPage .vehicle-plate-preview-wrap{display:flex;justify-content:center;margin-bottom:13px}
-#formPage .vehicle-plate-preview{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-editor--empty p{margin:0;color:#77857d;font-size:11px;line-height:1.75}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview-wrap{display:flex;justify-content:center;margin-bottom:13px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview{
   display:flex;
   align-items:stretch;
   justify-content:flex-start;
@@ -1731,7 +1958,7 @@ html,body{background:var(--bg);color:var(--text)}
   letter-spacing:.4px;
   line-height:1;
 }
-#formPage .iran-plate-country-band{
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band{
   display:flex;
   flex:0 0 55px;
   flex-direction:column;
@@ -1744,7 +1971,7 @@ html,body{background:var(--bg);color:var(--text)}
   color:#fff;
   direction:ltr;
 }
-#formPage .iran-flag{
+:is(#formPage,#propertyVehiclesPage) .iran-flag{
   display:block;
   width:26px;
   height:auto;
@@ -1753,8 +1980,8 @@ html,body{background:var(--bg);color:var(--text)}
   border-radius:1px;
   background:#fff;
 }
-#formPage .iran-plate-country-band b,
-#formPage .iran-plate-country-band em{
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band b,
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band em{
   display:block;
   font-style:normal;
   font-weight:800;
@@ -1762,14 +1989,14 @@ html,body{background:var(--bg);color:var(--text)}
   line-height:1;
   white-space:nowrap;
 }
-#formPage .iran-plate-country-band b{font-size:6.2px}
-#formPage .iran-plate-country-band em{font-family:Tahoma,Arial,sans-serif;font-size:6px}
-#formPage .iran-plate-country-band--free-zone{
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band b{font-size:6.2px}
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band em{font-family:Tahoma,Arial,sans-serif;font-size:6px}
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band--free-zone{
   justify-content:flex-start;
   gap:1px;
   padding-top:4px;
 }
-#formPage .iran-plate-free-zone-badge{
+:is(#formPage,#propertyVehiclesPage) .iran-plate-free-zone-badge{
   display:grid;
   place-items:center;
   width:16px;
@@ -1783,7 +2010,7 @@ html,body{background:var(--bg);color:var(--text)}
   font-weight:900;
   line-height:1;
 }
-#formPage .iran-plate-country-band--free-zone small{
+:is(#formPage,#propertyVehiclesPage) .iran-plate-country-band--free-zone small{
   display:block;
   margin-top:1px;
   color:#fff;
@@ -1794,9 +2021,9 @@ html,body{background:var(--bg);color:var(--text)}
   line-height:1;
   white-space:nowrap;
 }
-#formPage .vehicle-plate-preview > .vehicle-plate-value,
-#formPage .vehicle-plate-preview > .vehicle-plate-letter,
-#formPage .vehicle-plate-preview > .vehicle-plate-region{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview > .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview > .vehicle-plate-letter,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview > .vehicle-plate-region{
   display:flex;
   flex:1 1 0;
   align-items:center;
@@ -1805,19 +2032,19 @@ html,body{background:var(--bg);color:var(--text)}
   padding:0 5px;
   border-left:1px solid rgba(23,34,29,.22);
 }
-#formPage .vehicle-plate-preview > .vehicle-plate-region{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview > .vehicle-plate-region{
   flex:0 0 48px;
   padding:0;
   background:rgba(255,255,255,.22);
 }
-#formPage .vehicle-plate-preview > .vehicle-plate-region .vehicle-plate-value{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview > .vehicle-plate-region .vehicle-plate-value{
   display:flex;
   align-items:center;
   justify-content:center;
   width:100%;
   height:100%;
 }
-#formPage .vehicle-plate-wheelchair{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-wheelchair{
   display:flex;
   flex:0 0 43px;
   align-items:center;
@@ -1826,7 +2053,7 @@ html,body{background:var(--bg);color:var(--text)}
   border-left:1px solid rgba(23,34,29,.22);
   color:#174b84;
 }
-#formPage .vehicle-plate-wheelchair-icon{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-wheelchair-icon{
   width:30px;
   height:30px;
   fill:none;
@@ -1835,34 +2062,34 @@ html,body{background:var(--bg);color:var(--text)}
   stroke-linejoin:round;
   stroke-width:2.35;
 }
-#formPage .vehicle-plate-value,
-#formPage .vehicle-plate-letter{direction:rtl}
-#formPage .vehicle-plate-value[data-preserve-latin="true"],
-#formPage .vehicle-plate-letter[data-preserve-latin="true"]{direction:ltr}
-#formPage .vehicle-plate-preview--yellow{border-color:#80680c;background:#ffd33d}
-#formPage .vehicle-plate-preview--red{border-color:#7a2222;background:#b63434;color:#fff}
-#formPage .vehicle-plate-preview--green{border-color:#1d5f4d;background:#287456;color:#fff}
-#formPage .vehicle-plate-preview--blue{border-color:#255174;background:#3684b9;color:#fff}
-#formPage .vehicle-plate-preview--khaki{border-color:#6e6145;background:#a59b78;color:#29271e}
-#formPage .vehicle-plate-preview--brown{border-color:#65402b;background:#986447;color:#fff}
-#formPage .vehicle-plate-preview--red > .vehicle-plate-region,
-#formPage .vehicle-plate-preview--green > .vehicle-plate-region,
-#formPage .vehicle-plate-preview--blue > .vehicle-plate-region,
-#formPage .vehicle-plate-preview--brown > .vehicle-plate-region{background:rgba(0,0,0,.15)}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-letter{direction:rtl}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-value[data-preserve-latin="true"],
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-letter[data-preserve-latin="true"]{direction:ltr}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--yellow{border-color:#80680c;background:#ffd33d}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--red{border-color:#7a2222;background:#b63434;color:#fff}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--green{border-color:#1d5f4d;background:#287456;color:#fff}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--blue{border-color:#255174;background:#3684b9;color:#fff}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--khaki{border-color:#6e6145;background:#a59b78;color:#29271e}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--brown{border-color:#65402b;background:#986447;color:#fff}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--red > .vehicle-plate-region,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--green > .vehicle-plate-region,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--blue > .vehicle-plate-region,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--brown > .vehicle-plate-region{background:rgba(0,0,0,.15)}
 
-#formPage .vehicle-plate-preview--latin,
-#formPage .vehicle-plate-preview--protocol,
-#formPage .vehicle-plate-preview--historical,
-#formPage .vehicle-plate-preview--motorcycle{min-height:68px}
-#formPage .vehicle-plate-preview--free-zone{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--latin,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--protocol,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--historical,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--motorcycle{min-height:68px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--free-zone{
   width:min(100%,245px);
   min-height:104px;
 }
-#formPage .vehicle-plate-latin-copy,
-#formPage .vehicle-plate-protocol-copy,
-#formPage .vehicle-plate-free-zone-copy,
-#formPage .vehicle-plate-historical-copy,
-#formPage .vehicle-plate-motorcycle-copy{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-latin-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-protocol-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-historical-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-motorcycle-copy{
   display:flex;
   flex:1 1 auto;
   align-items:center;
@@ -1871,14 +2098,14 @@ html,body{background:var(--bg);color:var(--text)}
   padding:6px 8px;
   border-left:1px solid rgba(23,34,29,.22);
 }
-#formPage .vehicle-plate-latin-copy,
-#formPage .vehicle-plate-protocol-copy,
-#formPage .vehicle-plate-historical-copy{flex-direction:column;gap:5px}
-#formPage .vehicle-plate-latin-copy small,
-#formPage .vehicle-plate-protocol-copy small,
-#formPage .vehicle-plate-free-zone-copy small,
-#formPage .vehicle-plate-historical-copy small,
-#formPage .vehicle-plate-motorcycle-copy small{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-latin-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-protocol-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-historical-copy{flex-direction:column;gap:5px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-latin-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-protocol-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-historical-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-motorcycle-copy small{
   color:inherit;
   font-family:Tahoma,Arial,sans-serif;
   font-size:8px;
@@ -1886,9 +2113,9 @@ html,body{background:var(--bg);color:var(--text)}
   letter-spacing:.2px;
   line-height:1;
 }
-#formPage .vehicle-plate-latin-copy .vehicle-plate-value,
-#formPage .vehicle-plate-protocol-copy .vehicle-plate-value{font-size:20px}
-#formPage .vehicle-plate-free-zone-copy{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-latin-copy .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-protocol-copy .vehicle-plate-value{font-size:20px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-copy{
   display:grid;
   grid-template-columns:minmax(0,1fr) 50px;
   align-items:stretch;
@@ -1896,13 +2123,13 @@ html,body{background:var(--bg);color:var(--text)}
   padding:0;
   border-left:1px solid rgba(23,34,29,.22);
 }
-#formPage .vehicle-plate-free-zone-numbers{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-numbers{
   display:grid;
   grid-template-rows:1fr 1fr;
   min-width:0;
 }
-#formPage .vehicle-plate-free-zone-numbers .vehicle-plate-value,
-#formPage .vehicle-plate-free-zone-latin{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-numbers .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-latin{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1910,18 +2137,18 @@ html,body{background:var(--bg);color:var(--text)}
   padding:4px 7px;
   color:#18251e;
 }
-#formPage .vehicle-plate-free-zone-numbers .vehicle-plate-value{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-numbers .vehicle-plate-value{
   border-bottom:1px solid rgba(23,34,29,.2);
   font-size:26px;
 }
-#formPage .vehicle-plate-free-zone-latin{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-latin{
   direction:ltr;
   font-family:Arial,sans-serif;
   font-size:15px;
   font-weight:800;
   letter-spacing:1px;
 }
-#formPage .vehicle-plate-free-zone-region{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-region{
   display:grid;
   grid-template-rows:1fr auto;
   align-items:center;
@@ -1929,7 +2156,7 @@ html,body{background:var(--bg);color:var(--text)}
   border-left:1px solid rgba(23,34,29,.22);
   background:#f3f7fa;
 }
-#formPage .vehicle-plate-free-zone-region .vehicle-plate-value{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-region .vehicle-plate-value{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1938,7 +2165,7 @@ html,body{background:var(--bg);color:var(--text)}
   color:#174b84;
   font-size:16px;
 }
-#formPage .vehicle-plate-free-zone-region small{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-free-zone-region small{
   display:block;
   min-width:0;
   padding:3px 2px 5px;
@@ -1954,23 +2181,23 @@ html,body{background:var(--bg);color:var(--text)}
   overflow:hidden;
   text-overflow:ellipsis;
 }
-#formPage .vehicle-plate-motorcycle-copy{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-motorcycle-copy{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   grid-template-rows:1fr auto;
   gap:4px 9px;
 }
-#formPage .vehicle-plate-motorcycle-copy .vehicle-plate-value{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-motorcycle-copy .vehicle-plate-value{
   display:flex;
   align-items:center;
   justify-content:center;
   min-width:0;
   font-size:19px;
 }
-#formPage .vehicle-plate-motorcycle-copy small{grid-column:1 / -1;text-align:center;font-size:7px}
-#formPage .vehicle-plate-preview--light[data-preserve-latin="true"]{font-size:16px;letter-spacing:1px}
-#formPage .vehicle-plate-preview--light[data-preserve-latin="true"] .vehicle-plate-latin-copy small{font-size:8px}
-#formPage .vehicle-plate-preview--sample{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-motorcycle-copy small{grid-column:1 / -1;text-align:center;font-size:7px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--light[data-preserve-latin="true"]{font-size:16px;letter-spacing:1px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--light[data-preserve-latin="true"] .vehicle-plate-latin-copy small{font-size:8px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample{
   width:108px;
   min-width:108px;
   min-height:33px;
@@ -1979,68 +2206,68 @@ html,body{background:var(--bg);color:var(--text)}
   font-size:9px;
   letter-spacing:0;
 }
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band{flex-basis:28px;gap:1px;padding:2px 1px}
-#formPage .vehicle-plate-preview--sample .iran-flag{width:18px;height:auto}
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band b{font-size:3.1px}
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band em{font-size:3px}
-#formPage .vehicle-plate-preview--sample > .vehicle-plate-value,
-#formPage .vehicle-plate-preview--sample > .vehicle-plate-letter,
-#formPage .vehicle-plate-preview--sample > .vehicle-plate-region{padding:0 2px}
-#formPage .vehicle-plate-preview--sample > .vehicle-plate-region{flex-basis:18px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-latin-copy,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-protocol-copy,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-historical-copy,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy{padding:3px 4px;gap:2px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-latin-copy small,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-protocol-copy small,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy small,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-historical-copy small,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy small{font-size:3px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-latin-copy .vehicle-plate-value,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-protocol-copy .vehicle-plate-value,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy .vehicle-plate-value,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-historical-copy .vehicle-plate-value,
-#formPage .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy .vehicle-plate-value{font-size:8px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-wheelchair{flex-basis:19px;padding:0 1px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-wheelchair-icon{width:15px;height:15px;stroke-width:2.4}
-#formPage .vehicle-plate-preview--free-zone.vehicle-plate-preview--sample{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band{flex-basis:28px;gap:1px;padding:2px 1px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-flag{width:18px;height:auto}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band b{font-size:3.1px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band em{font-size:3px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample > .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample > .vehicle-plate-letter,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample > .vehicle-plate-region{padding:0 2px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample > .vehicle-plate-region{flex-basis:18px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-latin-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-protocol-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-historical-copy,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy{padding:3px 4px;gap:2px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-latin-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-protocol-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-historical-copy small,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy small{font-size:3px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-latin-copy .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-protocol-copy .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-historical-copy .vehicle-plate-value,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy .vehicle-plate-value{font-size:8px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-wheelchair{flex-basis:19px;padding:0 1px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-wheelchair-icon{width:15px;height:15px;stroke-width:2.4}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--free-zone.vehicle-plate-preview--sample{
   width:108px;
   min-width:108px;
   min-height:46px;
 }
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone{flex-basis:29px;padding-top:2px}
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone .iran-plate-free-zone-badge,
-#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone small{display:none}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy{grid-template-columns:minmax(0,1fr) 23px;padding:0}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-numbers .vehicle-plate-value{padding:2px;font-size:9px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-latin{padding:2px;font-size:5px;letter-spacing:.2px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-region .vehicle-plate-value{padding:2px 1px;font-size:7px}
-#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-region small{padding:1px;font-size:3.5px}
-#formPage .vehicle-plate-inputs{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band--free-zone{flex-basis:29px;padding-top:2px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band--free-zone .iran-plate-free-zone-badge,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .iran-plate-country-band--free-zone small{display:none}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy{grid-template-columns:minmax(0,1fr) 23px;padding:0}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-numbers .vehicle-plate-value{padding:2px;font-size:9px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-latin{padding:2px;font-size:5px;letter-spacing:.2px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-region .vehicle-plate-value{padding:2px 1px;font-size:7px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--sample .vehicle-plate-free-zone-region small{padding:1px;font-size:3.5px}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-inputs{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
   gap:8px;
 }
-#formPage .vehicle-plate-inputs--latin{grid-template-columns:minmax(0,1fr)}
-#formPage .vehicle-plate-input-wrap{display:block;margin:0}
-#formPage .vehicle-plate-input-wrap > span{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-inputs--latin{grid-template-columns:minmax(0,1fr)}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-input-wrap{display:block;margin:0}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-input-wrap > span{
   display:block;
   margin:0 0 5px;
   color:#53655b;
   font-size:10px;
   font-weight:700;
 }
-#formPage .vehicle-plate-input{
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-input{
   min-height:42px;
   padding:7px 8px;
   border-radius:9px!important;
   font-size:14px;
   text-align:center;
 }
-#formPage .vehicle-plate-input[data-preserve-latin="true"]{text-align:left}
-#formPage .vehicle-plate-field.is-no-plate .vehicle-plate-description,
-#formPage .vehicle-plate-field.is-no-plate .vehicle-plate-editor{opacity:.72}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-input[data-preserve-latin="true"]{text-align:left}
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-field.is-no-plate .vehicle-plate-description,
+:is(#formPage,#propertyVehiclesPage) .vehicle-plate-field.is-no-plate .vehicle-plate-editor{opacity:.72}
 .document-item .document-item-copy{
   display:flex;
   flex:1 1 auto;
@@ -2073,12 +2300,12 @@ html,body{background:var(--bg);color:var(--text)}
 @media(max-width:430px){
   .searchable-select-option-name{font-size:11px}
   .searchable-select-options{max-height:228px}
-  #formPage .vehicle-plate-field{padding:12px}
-  #formPage .vehicle-plate-editor{padding:10px}
-  #formPage .vehicle-plate-preview{min-height:57px;font-size:18px}
-  #formPage .iran-plate-country-band{flex-basis:47px}
-  #formPage .vehicle-plate-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #formPage .vehicle-plate-inputs--latin{grid-template-columns:minmax(0,1fr)}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-field{padding:12px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-editor{padding:10px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview{min-height:57px;font-size:18px}
+  :is(#formPage,#propertyVehiclesPage) .iran-plate-country-band{flex-basis:47px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-inputs--latin{grid-template-columns:minmax(0,1fr)}
 }
 
 @media(prefers-reduced-motion:reduce){
@@ -2086,7 +2313,7 @@ html,body{background:var(--bg);color:var(--text)}
   .searchable-select-chevron,
   .searchable-select-option,
   #locationPage .location-choice,
-  #locationPage .location-address-field .field-textarea{transition:none}
+  #locationPage .location-details-grid .field-input{transition:none}
 }
 #formPage .form-section-fields .vehicle-plate-input{ text-align:center; }
 #formPage .form-section-fields .vehicle-plate-input[data-preserve-latin="true"]{ text-align:left; }
@@ -2321,21 +2548,21 @@ html,body{background:var(--bg);color:var(--text)}
   to{transform:translateX(-285%)}
 }
 @media(max-width:430px){
-  #formPage .vehicle-card{padding:12px}
-  #formPage .vehicle-card-heading h3{font-size:13px}
-  #formPage .vehicle-plate-preview--latin,
-  #formPage .vehicle-plate-preview--protocol,
-  #formPage .vehicle-plate-preview--historical,
-  #formPage .vehicle-plate-preview--motorcycle{min-height:60px}
-  #formPage .vehicle-plate-preview--free-zone{min-height:86px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-card{padding:12px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-card-heading h3{font-size:13px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--latin,
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--protocol,
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--historical,
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--motorcycle{min-height:60px}
+  :is(#formPage,#propertyVehiclesPage) .vehicle-plate-preview--free-zone{min-height:86px}
   #documentsPage .document-upload-control{gap:6px}
   #documentsPage .document-upload-trigger{flex-basis:118px;font-size:10px}
   #documentsPage .document-upload-prefix{padding:0 7px;font-size:10px}
   #documentsPage .document-upload-summary{font-size:10.5px}
 }
 @media(prefers-reduced-motion:reduce){
-  #formPage .vehicle-add-button,
-  #formPage .vehicle-remove-button,
+  :is(#formPage,#propertyVehiclesPage) .vehicle-add-button,
+  :is(#formPage,#propertyVehiclesPage) .vehicle-remove-button,
   #documentsPage .document-upload-field,
   #documentsPage .document-upload-trigger,
   #documentsPage .document-add-button,

@@ -52,6 +52,8 @@ const RESTORABLE_PAGE_IDS = new Set([
   'formPage',
   'timePage',
   'locationPage',
+  'propertyVehiclesPage',
+  'propertySecurityPage',
   'incidentReportPage',
   'documentsPage'
 ]);
@@ -65,6 +67,9 @@ function clearRetiredIncidentFields(form = state.form) {
 
 function clearRetiredPropertyFields(form = state.form) {
   if (!isPlainRecord(form)) return;
+  // The previous property release used one flat profile per role. Move any of
+  // those values into the new repeatable packages before retiring the old keys.
+  normalizePropertyPeople(form);
   RETIRED_PROPERTY_FIELD_KEYS.forEach(key => delete form[key]);
   // Earlier property drafts stored vehicle details as a plain text field. The new
   // property vehicle page uses the same structured collection as the people report.
@@ -246,18 +251,51 @@ function captureTimeDraft() {
   };
 }
 
+const LOCATION_DETAIL_FIELD_IDS = Object.freeze({
+  postalCode: 'postalCode',
+  buildingPlaque: 'buildingPlaque',
+  floor: 'floor',
+  unit: 'unit'
+});
+
+function clearLocationDetailFields(location = state.location) {
+  if (!isPlainRecord(location)) return;
+  // "address" belonged to the former one-box design and must not accompany the
+  // explicit postal-code / plaque / floor / unit fields in a draft or payload.
+  delete location.address;
+  Object.keys(LOCATION_DETAIL_FIELD_IDS).forEach(key => delete location[key]);
+}
+
+function normalizeLocationDetailFields(location = state.location) {
+  if (!isPlainRecord(location)) return;
+  delete location.address;
+  Object.keys(LOCATION_DETAIL_FIELD_IDS).forEach(key => {
+    if (typeof location[key] === 'string') {
+      const value = location[key].trim();
+      if (value) location[key] = value;
+      else delete location[key];
+    } else if (location[key] !== undefined) {
+      delete location[key];
+    }
+  });
+}
+
 function captureLocationDraft() {
   const location = { ...state.location };
   const province = document.getElementById('province');
   const city = document.getElementById('city');
-  const address = document.getElementById('address');
 
   if (province && province.value.trim()) location.province = province.value.trim();
   else delete location.province;
   if (city && city.value.trim()) location.city = city.value.trim();
   else delete location.city;
-  if (address && address.value.trim()) location.address = address.value.trim();
-  else delete location.address;
+
+  clearLocationDetailFields(location);
+  Object.entries(LOCATION_DETAIL_FIELD_IDS).forEach(([key, id]) => {
+    const input = document.getElementById(id);
+    const value = input && typeof input.value === 'string' ? input.value.trim() : '';
+    if (value) location[key] = value;
+  });
   state.location = location;
 }
 
@@ -277,7 +315,12 @@ function activePageId() {
 function capturePageDraft(pageId) {
   if (pageId === 'formPage' || pageId === 'incidentReportPage') collectForm();
   if (pageId === 'timePage') captureTimeDraft();
-  if (pageId === 'locationPage') captureLocationDraft();
+  if (pageId === 'locationPage') {
+    captureLocationDraft();
+    if (isPropertyReport()) collectPropertyPeopleDetails();
+  }
+  if (pageId === 'propertyVehiclesPage') collectPropertyVehicleDetails();
+  if (pageId === 'propertySecurityPage') collectPropertySecurityDetails();
 }
 
 function persistReportDraft(pageId = activePageId()) {
@@ -354,21 +397,38 @@ function restoreReportDraft() {
   const category = canonicalCategory(typeof savedState.category === 'string' ? savedState.category : '');
   state.category = REPORT_CATEGORIES.has(category) ? category : '';
   state.subtype = typeof savedState.subtype === 'string' ? savedState.subtype : '';
-  state.form = isPlainRecord(savedState.form) ? { ...savedState.form } : {};
+  const savedForm = isPlainRecord(savedState.form) ? savedState.form : {};
+  const savedFormStep = Number.isInteger(savedState.formStep) && savedState.formStep >= 0 ? savedState.formStep : 0;
+  // The prior property flow stored its three location-related pages as form
+  // sections. Detect that layout before normalizing its flat person fields.
+  const restoresPreviousPropertyLayout = state.category === 'املاک'
+    && (hasLegacyPropertyPersonFields(savedForm) || (!isPlainRecord(savedForm.propertyPeople) && savedFormStep > 0));
+  state.form = { ...savedForm };
   clearRetiredIncidentFields(state.form);
   if (state.category === 'املاک') clearRetiredPropertyFields(state.form);
-  state.formStep = Number.isInteger(savedState.formStep) && savedState.formStep >= 0 ? savedState.formStep : 0;
+  state.formStep = state.category === 'املاک' ? 0 : savedFormStep;
   state.location = isPlainRecord(savedState.location) ? { ...savedState.location } : {};
+  normalizeLocationDetailFields(state.location);
   normalizeLocationForCategory();
   state.time = isPlainRecord(savedState.time) ? { ...savedState.time } : {};
   state.documents = [];
   timeDraft = restoredTimeDraft(snapshot.timeDraft);
 
   let pageId = typeof snapshot.page === 'string' && RESTORABLE_PAGE_IDS.has(snapshot.page) ? snapshot.page : 'homePage';
-  const needsCategory = new Set(['objectTypePage', 'phenomenonTypePage', 'formPage', 'timePage', 'locationPage', 'incidentReportPage', 'documentsPage']);
+  const needsCategory = new Set(['objectTypePage', 'phenomenonTypePage', 'formPage', 'timePage', 'locationPage', 'propertyVehiclesPage', 'propertySecurityPage', 'incidentReportPage', 'documentsPage']);
   if (needsCategory.has(pageId) && !state.category) pageId = 'categoryPage';
   if (pageId === 'objectTypePage' && state.category !== 'اشیاء') pageId = 'categoryPage';
   if (pageId === 'phenomenonTypePage' && state.category !== 'رویداد') pageId = 'categoryPage';
+  if (['propertyVehiclesPage', 'propertySecurityPage'].includes(pageId) && state.category !== 'املاک') pageId = 'categoryPage';
+  if (restoresPreviousPropertyLayout && pageId === 'formPage') {
+    pageId = savedFormStep === 0
+      ? 'locationPage'
+      : savedFormStep === 1
+        ? 'propertyVehiclesPage'
+        : savedFormStep === 2
+          ? 'propertySecurityPage'
+          : 'formPage';
+  }
   if (pageId === 'incidentReportPage' && state.category !== 'افراد') pageId = state.category === 'املاک' ? 'formPage' : 'locationPage';
 
   isRestoringDraft = true;
@@ -376,6 +436,8 @@ function restoreReportDraft() {
     if (pageId === 'formPage') openForm();
     else if (pageId === 'timePage') openTime();
     else if (pageId === 'locationPage') openLocation();
+    else if (pageId === 'propertyVehiclesPage') openPropertyVehicles();
+    else if (pageId === 'propertySecurityPage') openPropertySecurity();
     else if (pageId === 'incidentReportPage') openIncidentReport();
     else if (pageId === 'documentsPage') openDocuments();
     else showPage(pageId);
@@ -411,7 +473,7 @@ function normalizeFieldValue(element) {
 }
 
 function resizeTextarea(textarea) {
-  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"], #locationPage textarea[data-auto-resize="true"]')) return;
+  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"], #locationPage textarea[data-auto-resize="true"], #propertyVehiclesBody textarea[data-auto-resize="true"], #propertySecurityBody textarea[data-auto-resize="true"]')) return;
   const maxHeight = 280;
   textarea.style.height = 'auto';
   const height = Math.min(Math.max(textarea.scrollHeight, 52), maxHeight);
@@ -536,6 +598,13 @@ function chooseCategory(category) {
   timeDraft = null;
   locationRequestSequence += 1;
   clearLocationMarker();
+  ['propertyLocationFormBody', 'propertyVehiclesBody', 'propertySecurityBody'].forEach(id => {
+    const body = document.getElementById(id);
+    if (body) {
+      body.innerHTML = '';
+      body.hidden = id === 'propertyLocationFormBody';
+    }
+  });
   if (category === 'اشیاء') return showPage('objectTypePage');
   if (category === 'رویداد') return showPage('phenomenonTypePage');
   if (category === 'املاک') return openLocation();
@@ -591,6 +660,7 @@ function escapeHtml(value) {
 const MAX_DOCUMENTS = 10;
 const MAX_DOCUMENT_TOTAL_BYTES = 100 * 1024 * 1024;
 const MAX_VEHICLES = 10;
+const MAX_PROPERTY_PEOPLE = 10;
 
 const VEHICLE_KIND_OPTIONS = Object.freeze([
   { value: 'خودرو', label: 'خودرو', search: 'خودرو سواری وانت کامیون اتوبوس' },
@@ -1008,8 +1078,27 @@ function vehicleCollectionMarkup() {
   return `<div class="vehicle-collection" data-vehicle-collection aria-label="فهرست وسایل نقلیه">${vehicleCollectionInnerMarkup()}</div>`;
 }
 
+function activeVehicleCollection() {
+  // A property report renders the same reusable package on its own physical page.
+  // Prefer the visible collection so an interaction can never redraw a hidden form.
+  return document.querySelector('#propertyVehiclesPage.active [data-vehicle-collection], #formPage.active [data-vehicle-collection]')
+    || document.querySelector('[data-vehicle-collection]');
+}
+
+function collectVehicleDetailsForInteraction(element = null) {
+  const inPropertyVehiclePage = element && typeof element.closest === 'function'
+    && element.closest('#propertyVehiclesPage');
+  const propertyVehiclePage = document.getElementById('propertyVehiclesPage');
+  const propertyVehiclePageIsActive = propertyVehiclePage && propertyVehiclePage.classList.contains('active');
+  if (isPropertyReport() && (inPropertyVehiclePage || propertyVehiclePageIsActive)) {
+    collectPropertyVehicleDetails();
+    return;
+  }
+  collectForm();
+}
+
 function renderVehiclePackages() {
-  const collection = document.querySelector('[data-vehicle-collection]');
+  const collection = activeVehicleCollection();
   if (!collection) return;
   collection.innerHTML = vehicleCollectionInnerMarkup();
   collection.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
@@ -1026,7 +1115,7 @@ function vehicleCardIndexFor(element) {
 function updateVehicleKind(component) {
   const index = vehicleCardIndexFor(component);
   if (index < 0) return;
-  collectForm();
+  collectVehicleDetailsForInteraction(component);
   const vehicles = ensurePersonVehicles();
   const vehicle = vehicles[index];
   if (!vehicle) return;
@@ -1042,7 +1131,7 @@ function updateVehiclePlateTemplate(component) {
   const previousTemplate = Array.isArray(state.form.vehicles) && isPlainRecord(state.form.vehicles[index]) && isPlainRecord(state.form.vehicles[index].plate)
     ? state.form.vehicles[index].plate.template
     : '';
-  collectForm();
+  collectVehicleDetailsForInteraction(component);
   const vehicles = ensurePersonVehicles();
   const vehicle = vehicles[index];
   const template = vehicle && vehiclePlateTemplateFor(selectedTemplate);
@@ -1054,7 +1143,7 @@ function updateVehiclePlateTemplate(component) {
 function toggleVehicleNoPlate(checkbox) {
   const index = vehicleCardIndexFor(checkbox);
   if (index < 0) return;
-  collectForm();
+  collectVehicleDetailsForInteraction(checkbox);
   const vehicle = ensurePersonVehicles()[index];
   if (!vehicle) return;
   if (checkbox.checked) {
@@ -1068,7 +1157,7 @@ function toggleVehicleNoPlate(checkbox) {
 }
 
 function addVehicle() {
-  collectForm();
+  collectVehicleDetailsForInteraction();
   const vehicles = ensurePersonVehicles();
   if (vehicles.length >= MAX_VEHICLES) return;
   vehicles.push({});
@@ -1079,7 +1168,7 @@ function addVehicle() {
 function removeVehicle(button) {
   const index = vehicleCardIndexFor(button);
   if (index < 0) return;
-  collectForm();
+  collectVehicleDetailsForInteraction(button);
   const vehicles = ensurePersonVehicles();
   vehicles.splice(index, 1);
   if (!vehicles.length) vehicles.push({});
@@ -1112,8 +1201,8 @@ function syncVehiclePlatePreview(input) {
   }
 }
 
-function collectVehiclePackages(data) {
-  const collection = document.querySelector('[data-vehicle-collection]');
+function collectVehiclePackages(data, scope = document) {
+  const collection = scope && typeof scope.querySelector === 'function' ? scope.querySelector('[data-vehicle-collection]') : null;
   // Only the active sequential form section is in the DOM. Keep package records
   // intact while the reporter is on earlier steps, time, location, or documents.
   if (!collection) return;
@@ -1355,6 +1444,9 @@ function hasMeaningfulFormValue() {
     }
     if (name === 'vehiclePlate' && isPlainRecord(value)) return Boolean(value.template);
     if (name === 'vehicles' && Array.isArray(value)) return value.some(vehicleRecordHasMeaningfulValue);
+    if (name === 'propertyPeople' && isPlainRecord(value)) {
+      return Object.values(value).some(entries => Array.isArray(entries) && entries.some(propertyPersonRecordHasMeaningfulValue));
+    }
     return typeof value === 'string' && value.trim();
   });
 }
@@ -1393,7 +1485,7 @@ function fieldValidationMessage(element) {
 }
 
 function validateVisibleFormFields() {
-  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation], #incidentReportBody [data-validation]'))
+  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation], #incidentReportBody [data-validation], #propertyLocationFormBody [data-validation], #propertyVehiclesBody [data-validation], #propertySecurityBody [data-validation]'))
     .map(element => ({ element, message: fieldValidationMessage(element) }))
     .find(item => item.message);
 
@@ -1501,54 +1593,336 @@ function renderIncidentReport() {
   setTimeout(normalizeVisibleNumbers, 0);
 }
 
-function propertyPersonRoleToggle(name, label) {
-  const checked = state.form[name] === 'بله' ? ' checked' : '';
-  return `<label class="property-person-role-toggle"><input type="checkbox" data-property-role-toggle data-property-role-field="${name}" onchange="persistReportDraft()"${checked}><span>${label}</span></label>`;
+const PROPERTY_PERSON_ROLES = Object.freeze({
+  owner: Object.freeze({ title: 'مشخصات مالکین', singular: 'مالک', hasPropertyRoles: true }),
+  resident: Object.freeze({ title: 'ساکنین', singular: 'ساکن', hasPropertyRoles: false }),
+  visitor: Object.freeze({ title: 'ترددکنندگان', singular: 'ترددکننده', hasPropertyRoles: false })
+});
+const PROPERTY_PERSON_FIELD_KEYS = Object.freeze([
+  'firstName', 'lastName', 'nickname', 'phone', 'gender', 'height', 'bodyBuild',
+  'face', 'hairColor', 'hairStatus', 'beard', 'appearance'
+]);
+const PROPERTY_PERSON_LEGACY_SUFFIXES = Object.freeze({
+  firstName: 'FirstName',
+  lastName: 'LastName',
+  nickname: 'Nickname',
+  phone: 'Phone',
+  gender: 'Gender',
+  height: 'Height',
+  bodyBuild: 'BodyBuild',
+  face: 'Face',
+  hairColor: 'HairColor',
+  hairStatus: 'HairStatus',
+  beard: 'Beard',
+  appearance: 'Appearance'
+});
+
+function propertyPersonRecordHasMeaningfulValue(person) {
+  if (!isPlainRecord(person)) return false;
+  return Object.values(person).some(value => value === true || (typeof value === 'string' && value.trim()));
 }
 
-function propertyPersonDetailsMarkup(prefix, title, options = {}) {
-  const name = suffix => `${prefix}${suffix}`;
-  const ownerToggles = options.owner
+function normalizedPropertyPersonRecord(value, role) {
+  const source = isPlainRecord(value) ? value : {};
+  const record = {};
+  PROPERTY_PERSON_FIELD_KEYS.forEach(key => {
+    if (typeof source[key] === 'string' && source[key].trim()) record[key] = source[key].trim();
+  });
+  if (role === 'owner') {
+    if (source.isResident === true || source.isResident === 'بله') record.isResident = true;
+    if (source.isVisitor === true || source.isVisitor === 'بله') record.isVisitor = true;
+  }
+  return record;
+}
+
+function legacyPropertyPersonRecord(form, role) {
+  const record = {};
+  Object.entries(PROPERTY_PERSON_LEGACY_SUFFIXES).forEach(([key, suffix]) => {
+    const value = form[`${role}${suffix}`];
+    if (typeof value === 'string' && value.trim()) record[key] = value.trim();
+  });
+  if (role === 'owner') {
+    if (form.ownerIsResident === 'بله' || form.ownerIsResident === true) record.isResident = true;
+    if (form.ownerIsVisitor === 'بله' || form.ownerIsVisitor === true) record.isVisitor = true;
+  }
+  return record;
+}
+
+function legacyPropertyPersonFieldNames() {
+  return Object.keys(PROPERTY_PERSON_ROLES).flatMap(role => [
+    ...Object.values(PROPERTY_PERSON_LEGACY_SUFFIXES).map(suffix => `${role}${suffix}`),
+    ...(role === 'owner' ? ['ownerIsResident', 'ownerIsVisitor'] : [])
+  ]);
+}
+
+function hasLegacyPropertyPersonFields(form) {
+  return isPlainRecord(form) && legacyPropertyPersonFieldNames().some(key => form[key] !== undefined);
+}
+
+function normalizePropertyPeople(form = state.form) {
+  if (!isPlainRecord(form)) return {};
+  const source = isPlainRecord(form.propertyPeople) ? form.propertyPeople : {};
+  const hadStructuredPeople = isPlainRecord(form.propertyPeople);
+  const people = {};
+  let hasEntries = false;
+
+  Object.keys(PROPERTY_PERSON_ROLES).forEach(role => {
+    let entries = Array.isArray(source[role])
+      ? source[role].filter(isPlainRecord).slice(0, MAX_PROPERTY_PEOPLE).map(person => normalizedPropertyPersonRecord(person, role))
+      : [];
+    if (!entries.length && !Array.isArray(source[role])) {
+      const legacy = legacyPropertyPersonRecord(form, role);
+      if (propertyPersonRecordHasMeaningfulValue(legacy)) entries = [legacy];
+    }
+    people[role] = entries;
+    if (entries.length) hasEntries = true;
+  });
+
+  legacyPropertyPersonFieldNames().forEach(key => delete form[key]);
+  if (hadStructuredPeople || hasEntries) form.propertyPeople = people;
+  else delete form.propertyPeople;
+  return people;
+}
+
+function ensurePropertyPeople() {
+  const people = normalizePropertyPeople();
+  Object.keys(PROPERTY_PERSON_ROLES).forEach(role => {
+    if (!Array.isArray(people[role]) || !people[role].length) people[role] = [{}];
+  });
+  state.form.propertyPeople = people;
+  return people;
+}
+
+function propertyPersonInputMarkup(person, key, label, type = 'text', options = {}) {
+  const value = typeof person[key] === 'string' ? escapeHtml(person[key]) : '';
+  const numeric = options.numeric ? ' numeric' : '';
+  const textOnly = options.textOnly ? ' text-only' : '';
+  const maxLength = options.maxLength ? ` maxlength="${options.maxLength}"` : '';
+  const maxValue = Number.isFinite(options.maxValue) ? ` data-max-value="${options.maxValue}"` : '';
+  const validation = options.validation ? ` data-validation="${options.validation}"` : '';
+  const numericRule = options.numeric ? ' data-numeric="true"' : '';
+  const textRule = options.textOnly ? ' data-text-only="true"' : '';
+  const attributes = `data-property-person-field="${key}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}`;
+  if (type === 'textarea') {
+    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea${numeric}${textOnly}" ${attributes} data-auto-resize="true">${value}</textarea></div>`;
+  }
+  return `<div class="field-group"><label>${label}</label><input class="field-input${numeric}${textOnly}" ${attributes} type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}" value="${value}"></div>`;
+}
+
+function propertyPersonChoicesMarkup(role, index, person, key, label, items) {
+  return `<div class="field-group"><label>${label}</label><div class="choice-row choice-row--three" data-property-person-choice data-property-person-choice-key="${key}">${items.map(item => {
+    const selected = person[key] === item ? ' selected' : '';
+    return `<button type="button" class="choice-btn${selected}" data-value="${item}" onclick="pickPropertyPersonChoice(this,'${role}',${index},'${key}','${item}')">${item}</button>`;
+  }).join('')}</div></div>`;
+}
+
+function propertyPersonPackageMarkup(role, person, index, total) {
+  const config = PROPERTY_PERSON_ROLES[role];
+  const removeButton = total > 1
+    ? `<button class="property-person-remove-button" type="button" onclick="removePropertyPerson('${role}',${index})">حذف این فرد</button>`
+    : '';
+  const ownerToggles = config.hasPropertyRoles
     ? `<div class="property-person-role-toggles" role="group" aria-label="وضعیت مالک نسبت به ملک">
-        ${propertyPersonRoleToggle(name('IsResident'), 'ساکن هست')}
-        ${propertyPersonRoleToggle(name('IsVisitor'), 'تردد میکند')}
+        <label class="property-person-role-toggle"><input type="checkbox" data-property-person-checkbox="isResident" onchange="persistReportDraft()"${person.isResident ? ' checked' : ''}><span>ساکن هست</span></label>
+        <label class="property-person-role-toggle"><input type="checkbox" data-property-person-checkbox="isVisitor" onchange="persistReportDraft()"${person.isVisitor ? ' checked' : ''}><span>تردد میکند</span></label>
       </div>`
     : '';
 
-  return `<section class="property-person-group" aria-labelledby="${prefix}DetailsTitle">
-    <h3 id="${prefix}DetailsTitle" class="property-person-group-title">${title}:</h3>
+  return `<article class="property-person-package" data-property-person-package data-property-person-role="${role}" data-property-person-index="${index}">
+    <header class="property-person-package-heading"><h4>${config.singular} ${faDigits(index + 1)}</h4>${removeButton}</header>
     <div class="property-person-basic-fields">
-      ${field(name('FirstName'), 'نام', 'text', { textOnly: true })}
-      ${field(name('LastName'), 'نام خانوادگی', 'text', { textOnly: true })}
-      ${field(name('Nickname'), 'شهرت', 'text', { textOnly: true })}
-      ${field(name('Phone'), 'شماره تماس', 'text', { numeric: true, maxLength: 11, validation: 'phone' })}
+      ${propertyPersonInputMarkup(person, 'firstName', 'نام', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'lastName', 'نام خانوادگی', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'nickname', 'شهرت', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'phone', 'شماره تماس', 'text', { numeric: true, maxLength: 11, validation: 'phone' })}
     </div>
-    ${choices(name('Gender'), 'جنسیت', ['مرد', 'زن', 'نامشخص'], { columns: 3 })}
+    ${propertyPersonChoicesMarkup(role, index, person, 'gender', 'جنسیت', ['مرد', 'زن', 'نامشخص'])}
     ${ownerToggles}
-    <h4 class="property-person-appearance-title">مشخصات ظاهری</h4>
+    <h5 class="property-person-appearance-title">مشخصات ظاهری</h5>
     <div class="property-person-appearance-fields">
-      ${field(name('Height'), 'قد', 'text', { numeric: true, maxLength: 3, maxValue: 250, validation: 'height' })}
-      ${choices(name('BodyBuild'), 'اندام', ['لاغر', 'معمولی', 'چاق'], { columns: 3 })}
-      ${field(name('Face'), 'رنگ پوست', 'text', { textOnly: true })}
-      ${field(name('HairColor'), 'رنگ مو', 'text', { textOnly: true })}
-      ${field(name('HairStatus'), 'وضعیت موی سر', 'text', { textOnly: true })}
-      ${field(name('Beard'), 'محاسن', 'text', { textOnly: true })}
-      ${field(name('Appearance'), 'ویژگی خاص', 'textarea', { placeholder: 'شامل زخم، تتو، معلولیت و موارد بارز دیگر' })}
+      ${propertyPersonInputMarkup(person, 'height', 'قد', 'text', { numeric: true, maxLength: 3, maxValue: 250, validation: 'height' })}
+      ${propertyPersonChoicesMarkup(role, index, person, 'bodyBuild', 'اندام', ['لاغر', 'معمولی', 'چاق'])}
+      ${propertyPersonInputMarkup(person, 'face', 'رنگ پوست', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'hairColor', 'رنگ مو', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'hairStatus', 'وضعیت موی سر', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'beard', 'محاسن', 'text', { textOnly: true })}
+      ${propertyPersonInputMarkup(person, 'appearance', 'ویژگی خاص', 'textarea')}
     </div>
+  </article>`;
+}
+
+function propertyPersonRoleSectionMarkup(role, people) {
+  const config = PROPERTY_PERSON_ROLES[role];
+  const entries = Array.isArray(people[role]) ? people[role] : [{}];
+  const atLimit = entries.length >= MAX_PROPERTY_PEOPLE;
+  return `<section class="property-person-role-section" aria-labelledby="propertyPeople${role}Title">
+    <h3 id="propertyPeople${role}Title" class="property-person-group-title">${config.title}:</h3>
+    <div class="property-person-package-list">${entries.map((person, index) => propertyPersonPackageMarkup(role, person, index, entries.length)).join('')}</div>
+    <button class="property-person-add-button button-with-icon" type="button" onclick="addPropertyPerson('${role}')"${atLimit ? ' disabled' : ''}>${iconMarkup('plus', 'property-person-add-icon')}<span>افزودن ${config.singular} دیگر${atLimit ? ` (حداکثر ${faDigits(MAX_PROPERTY_PEOPLE)})` : ''}</span></button>
   </section>`;
+}
+
+function renderPropertyLocationDetails() {
+  const body = document.getElementById('propertyLocationFormBody');
+  if (!body) return;
+  if (!isPropertyReport()) {
+    body.hidden = true;
+    body.innerHTML = '';
+    return;
+  }
+  const people = ensurePropertyPeople();
+  body.hidden = false;
+  body.innerHTML = `<section class="property-location-stage property-location-stage--details" aria-labelledby="propertyLocationDetailsTitle">
+    <header class="property-location-stage-heading">
+      <span class="property-location-stage-count">بخش ۱ از ۳</span>
+      <h2 id="propertyLocationDetailsTitle">مشخصات و محل ملک</h2>
+      <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
+    </header>
+    <div class="property-location-stage-body" data-property-location-form>${Object.keys(PROPERTY_PERSON_ROLES).map(role => propertyPersonRoleSectionMarkup(role, people)).join('')}</div>
+  </section>`;
+}
+
+function collectPropertyPeopleDetails() {
+  const body = document.getElementById('propertyLocationFormBody');
+  if (!isPropertyReport() || !body || body.hidden) return;
+  const people = ensurePropertyPeople();
+  body.querySelectorAll('[data-property-person-package]').forEach(card => {
+    const role = card.dataset.propertyPersonRole;
+    const index = Number(card.dataset.propertyPersonIndex);
+    if (!PROPERTY_PERSON_ROLES[role] || !Number.isInteger(index) || index < 0) return;
+    const person = {};
+    card.querySelectorAll('[data-property-person-field]').forEach(input => {
+      const key = input.dataset.propertyPersonField;
+      const value = typeof input.value === 'string' ? input.value.trim() : '';
+      if (PROPERTY_PERSON_FIELD_KEYS.includes(key) && value) person[key] = value;
+    });
+    card.querySelectorAll('[data-property-person-choice]').forEach(choiceRow => {
+      const key = choiceRow.dataset.propertyPersonChoiceKey;
+      const selected = choiceRow.querySelector('.selected');
+      if (PROPERTY_PERSON_FIELD_KEYS.includes(key) && selected) person[key] = selected.dataset.value || selected.textContent.trim();
+    });
+    if (role === 'owner') {
+      card.querySelectorAll('[data-property-person-checkbox]').forEach(checkbox => {
+        const key = checkbox.dataset.propertyPersonCheckbox;
+        if (key === 'isResident' || key === 'isVisitor') {
+          if (checkbox.checked) person[key] = true;
+        }
+      });
+    }
+    if (!Array.isArray(people[role])) people[role] = [];
+    people[role][index] = normalizedPropertyPersonRecord(person, role);
+  });
+  state.form.propertyPeople = people;
+}
+
+function pickPropertyPersonChoice(button, role, index, key, value) {
+  if (!PROPERTY_PERSON_ROLES[role] || !PROPERTY_PERSON_FIELD_KEYS.includes(key)) return;
+  collectPropertyPeopleDetails();
+  const people = ensurePropertyPeople();
+  const person = people[role][index];
+  if (!person) return;
+  person[key] = value;
+  const row = button.parentElement;
+  row.querySelectorAll('.choice-btn').forEach(item => item.classList.remove('selected'));
+  button.classList.add('selected');
+  persistReportDraft();
+}
+
+function addPropertyPerson(role) {
+  if (!PROPERTY_PERSON_ROLES[role]) return;
+  collectPropertyPeopleDetails();
+  const people = ensurePropertyPeople();
+  if (people[role].length >= MAX_PROPERTY_PEOPLE) return;
+  people[role].push({});
+  renderPropertyLocationDetails();
+  persistReportDraft();
+}
+
+function removePropertyPerson(role, index) {
+  if (!PROPERTY_PERSON_ROLES[role]) return;
+  collectPropertyPeopleDetails();
+  const people = ensurePropertyPeople();
+  if (!Number.isInteger(index) || index < 0 || index >= people[role].length) return;
+  people[role].splice(index, 1);
+  if (!people[role].length) people[role].push({});
+  renderPropertyLocationDetails();
+  persistReportDraft();
+}
+
+function renderPropertyVehicles() {
+  const body = document.getElementById('propertyVehiclesBody');
+  if (!body || !isPropertyReport()) return;
+  body.innerHTML = vehicleCollectionMarkup();
+  body.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
+  body.querySelectorAll('textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+}
+
+function collectPropertyVehicleDetails() {
+  if (!isPropertyReport()) return;
+  const data = { ...state.form };
+  clearRetiredPropertyFields(data);
+  const body = document.getElementById('propertyVehiclesBody');
+  collectVehiclePackages(data, body || undefined);
+  state.form = data;
+}
+
+function openPropertyVehicles() {
+  if (!isPropertyReport()) return openLocation();
+  renderPropertyVehicles();
+  showPage('propertyVehiclesPage');
+}
+
+function continuePropertyVehicles() {
+  collectPropertyVehicleDetails();
+  if (!validateVisibleFormFields()) return;
+  openPropertySecurity();
+}
+
+function backFromPropertyVehicles() {
+  collectPropertyVehicleDetails();
+  openLocation();
+}
+
+function renderPropertySecurity() {
+  const body = document.getElementById('propertySecurityBody');
+  if (!body || !isPropertyReport()) return;
+  body.innerHTML = `${field('security', 'سیستم حفاظت و کنترل', 'textarea')}${field('specialSecurity', 'اقدامات حفاظتی و کنترل خاص', 'textarea')}`;
+  restoreFormValuesIn(body);
+  body.querySelectorAll('textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+}
+
+function collectPropertySecurityDetails() {
+  if (!isPropertyReport()) return;
+  const body = document.getElementById('propertySecurityBody');
+  if (!body) return;
+  const data = { ...state.form };
+  body.querySelectorAll('[data-field]').forEach(element => {
+    const value = element.value.trim();
+    if (value) data[element.dataset.field] = value;
+    else delete data[element.dataset.field];
+  });
+  state.form = data;
+}
+
+function openPropertySecurity() {
+  if (!isPropertyReport()) return openLocation();
+  renderPropertySecurity();
+  showPage('propertySecurityPage');
+}
+
+function continuePropertySecurity() {
+  collectPropertySecurityDetails();
+  if (!validateVisibleFormFields()) return;
+  openTime();
+}
+
+function backFromPropertySecurity() {
+  collectPropertySecurityDetails();
+  openPropertyVehicles();
 }
 
 function propertyForm() {
   return [
-    formSection('مشخصات و محل ملک',
-      `${propertyPersonDetailsMarkup('owner', 'مشخصات مالکین', { owner: true })}${propertyPersonDetailsMarkup('resident', 'ساکنین')}${propertyPersonDetailsMarkup('visitor', 'ترددکنندگان')}`,
-      'پس از ثبت مکان وقوع، مشخصات افراد مرتبط با ملک را وارد کنید.'),
-    formSection('مشخصات خودرو و موتورسیکلت',
-      vehicleCollectionMarkup(),
-      'برای هر خودرو یا موتورسیکلت، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.'),
-    formSection('اقدامات حفاظتی ملک',
-      `${field('security','سیستم حفاظت و کنترل','textarea')}${field('specialSecurity','اقدامات حفاظتی و کنترل خاص','textarea')}`,
-      'وضعیت حفاظت و مراقبتی ملک را شرح دهید.'),
     formSection('شرح و جزئیات وقوع',
       `${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
       'دلیل گزارش و نحوه اطلاع خود را ثبت کنید.')
@@ -1675,23 +2049,21 @@ function collectForm() {
     if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
     else delete data[row.dataset.choice];
   });
-  document.querySelectorAll('#formBody [data-property-role-toggle]').forEach(checkbox => {
-    const name = checkbox.dataset.propertyRoleField;
-    if (!name) return;
-    if (checkbox.checked) data[name] = 'بله';
-    else delete data[name];
-  });
   collectSocialLinks(data);
-  collectVehiclePackages(data);
+  const vehicleScope = isPropertyReport()
+    ? document.getElementById('propertyVehiclesBody')
+    : document.getElementById('formBody');
+  collectVehiclePackages(data, vehicleScope || undefined);
   state.form = data;
 }
 
-function restoreFormValues() {
+function restoreFormValuesIn(scope) {
+  if (!scope) return;
   Object.entries(state.form).forEach(([name, value]) => {
     if (typeof value !== 'string') return;
-    const fieldElement = document.querySelector(`#formBody [data-field="${CSS.escape(name)}"], #incidentReportBody [data-field="${CSS.escape(name)}"]`);
+    const fieldElement = scope.querySelector(`[data-field="${CSS.escape(name)}"]`);
     if (fieldElement) fieldElement.value = value;
-    const row = document.querySelector(`#formBody [data-choice="${CSS.escape(name)}"], #incidentReportBody [data-choice="${CSS.escape(name)}"]`);
+    const row = scope.querySelector(`[data-choice="${CSS.escape(name)}"]`);
     if (row) {
       row.querySelectorAll('.choice-btn').forEach(button => {
         if (button.textContent.trim() === value) {
@@ -1701,8 +2073,13 @@ function restoreFormValues() {
       });
     }
   });
-  document.querySelectorAll('#formBody [data-searchable-select], #incidentReportBody [data-searchable-select]').forEach(updateSearchableSelectPresentation);
-  document.querySelectorAll('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+  scope.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
+  scope.querySelectorAll('textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+}
+
+function restoreFormValues() {
+  restoreFormValuesIn(document.getElementById('formBody'));
+  restoreFormValuesIn(document.getElementById('incidentReportBody'));
 }
 
 function continueForm() {
@@ -1724,7 +2101,7 @@ function backFromForm() {
 
 function backFromTime() {
   captureTimeDraft();
-  if (state.category === 'املاک') return openLocation();
+  if (state.category === 'املاک') return openPropertySecurity();
   showPage('formPage');
 }
 
@@ -1810,6 +2187,7 @@ function setLocationModeAvailability() {
   document.querySelectorAll('#locationPage [data-location-mode="unknown"]').forEach(button => {
     button.hidden = !hasUnknownMode;
     button.disabled = !hasUnknownMode;
+    button.style.display = hasUnknownMode ? '' : 'none';
     button.setAttribute('aria-hidden', String(!hasUnknownMode));
   });
 }
@@ -1836,6 +2214,19 @@ function setLocationModeVisual(mode) {
   });
 }
 
+function locationDetailsMarkup() {
+  const value = key => escapeHtml(state.location[key] || '');
+  return `<section class="location-details-section" aria-labelledby="locationDetailsTitle">
+    <h2 id="locationDetailsTitle" class="location-details-title">جزئیات مکان وقوع</h2>
+    <div class="location-details-grid">
+      <div class="field-group"><label for="postalCode">کدپستی</label><input id="postalCode" class="field-input numeric" type="text" inputmode="numeric" maxlength="10" data-numeric="true" autocomplete="postal-code" value="${value('postalCode')}"></div>
+      <div class="field-group"><label for="buildingPlaque">پلاک</label><input id="buildingPlaque" class="field-input" type="text" autocomplete="off" value="${value('buildingPlaque')}"></div>
+      <div class="field-group"><label for="floor">طبقه</label><input id="floor" class="field-input" type="text" autocomplete="off" value="${value('floor')}"></div>
+      <div class="field-group"><label for="unit">واحد</label><input id="unit" class="field-input" type="text" autocomplete="off" value="${value('unit')}"></div>
+    </div>
+  </section>`;
+}
+
 function renderLocationFields() {
   const box = document.getElementById('locationFields');
   if (!box) return;
@@ -1849,20 +2240,17 @@ function renderLocationFields() {
   const province = unknown ? state.location.province || '' : '';
   const city = unknown ? state.location.city || '' : '';
   const counties = locationCountyItems(province);
-  if (unknown) delete state.location.address;
+  if (unknown) clearLocationDetailFields();
+  else normalizeLocationDetailFields();
   const regionFields = unknown ? `<div class="location-region-fields">
     ${searchableSelectMarkup('locationProvince', 'استان مکان وقوع', locationProvinceItems(), { inputId: 'province', value: province, placeholder: 'استان را انتخاب کنید' })}
     ${searchableSelectMarkup('locationCounty', 'شهرستان مکان وقوع', counties, { inputId: 'city', value: city, placeholder: province ? 'شهرستان را انتخاب کنید' : 'ابتدا استان را انتخاب کنید', disabled: !province })}
   </div>` : '';
-  const detailsField = unknown ? '' : `<div class="field-group location-address-field">
-      <label for="address">جزئیات مکان وقوع</label>
-      <textarea id="address" class="field-textarea" data-auto-resize="true" placeholder="شامل کدپستی، پلاک، طبقه و واحد و ...">${escapeHtml(state.location.address || '')}</textarea>
-    </div>`;
+  const detailsFields = unknown ? '' : locationDetailsMarkup();
 
-  box.innerHTML = `${regionFields}${detailsField}`;
+  box.innerHTML = `${regionFields}${detailsFields}`;
   box.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
-  const address = document.getElementById('address');
-  if (address) resizeTextarea(address);
+  box.querySelectorAll('input, textarea').forEach(normalizeFieldValue);
 }
 
 function updateLocationCountyPicker(province) {
@@ -2001,11 +2389,15 @@ function selectLocationMode(mode) {
 }
 
 function openLocation() {
+  normalizeLocationDetailFields();
   normalizeLocationForCategory();
   setLocationModeAvailability();
   const mode = allowedLocationModes().includes(state.location.mode) ? state.location.mode : '';
   setLocationModeVisual(mode);
   renderLocationFields();
+  renderPropertyLocationDetails();
+  const continueButton = document.getElementById('locationContinueButton');
+  if (continueButton) continueButton.textContent = isPropertyReport() ? 'مرحله بعد' : 'تایید مکان وقوع';
   const status = document.getElementById('locationStatus');
   if (mode === 'current' || mode === 'map') {
     showReportMap();
@@ -2041,7 +2433,11 @@ function continueLocation() {
     delete state.location.city;
   }
   if (state.category === 'افراد') return openIncidentReport();
-  if (state.category === 'املاک') return openTime();
+  if (state.category === 'املاک') {
+    collectPropertyPeopleDetails();
+    if (!validateVisibleFormFields()) return;
+    return openPropertyVehicles();
+  }
   openDocuments();
 }
 

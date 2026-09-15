@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 // The 100 MiB allowance belongs to the entire document upload field, not each file.
 const MAX_DOCUMENT_TOTAL_BYTES = 104857600;
+const MAX_PROPERTY_PEOPLE = 10;
 
 function jsonResponse(array $payload, int $status = 200): void {
   http_response_code($status);
@@ -117,76 +118,166 @@ function vehiclesHaveMeaningfulValue(array $vehicles): bool {
   return false;
 }
 
+function propertyPeopleHaveMeaningfulValue(array $people): bool {
+  foreach (['owner', 'resident', 'visitor'] as $role) {
+    $entries = $people[$role] ?? [];
+    if (!is_array($entries)) continue;
+    foreach ($entries as $person) {
+      if (!is_array($person)) continue;
+      foreach ($person as $value) {
+        if ($value === true || (is_scalar($value) && trim((string)$value) !== '')) return true;
+      }
+    }
+  }
+  return false;
+}
+
 function formHasMeaningfulValue(array $form): bool {
   foreach ($form as $key => $value) {
     if (is_scalar($value) && trim((string)$value) !== '') return true;
     if ($key === 'socialLinks' && is_array($value) && count($value) > 0) return true;
     if ($key === 'vehiclePlate' && is_array($value) && !empty($value['template'])) return true;
     if ($key === 'vehicles' && is_array($value) && vehiclesHaveMeaningfulValue($value)) return true;
+    if ($key === 'propertyPeople' && is_array($value) && propertyPeopleHaveMeaningfulValue($value)) return true;
   }
   return false;
 }
 
-function validatePropertyPersonFields(array $form): void {
-  $personPrefixes = [
+function propertyPersonRoleLabels(): array {
+  return [
     'owner' => 'مالک',
     'resident' => 'ساکن',
     'visitor' => 'ترددکننده'
   ];
+}
 
-  foreach ($personPrefixes as $prefix => $role) {
-    $phone = formValue($form, $prefix . 'Phone');
-    if ($phone !== null && !preg_match('/^\d{11}$/', englishDigits($phone))) {
-      throw new InvalidArgumentException('شماره تماس ' . $role . ' باید دقیقاً ۱۱ رقم باشد.');
-    }
+function propertyPersonLegacyKeys(): array {
+  $suffixes = ['FirstName', 'LastName', 'Nickname', 'Phone', 'Gender', 'Height', 'BodyBuild', 'Face', 'HairColor', 'HairStatus', 'Beard', 'Appearance'];
+  $keys = [];
+  foreach (array_keys(propertyPersonRoleLabels()) as $role) {
+    foreach ($suffixes as $suffix) $keys[] = $role . $suffix;
+  }
+  $keys[] = 'ownerIsResident';
+  $keys[] = 'ownerIsVisitor';
+  return $keys;
+}
 
-    $height = formValue($form, $prefix . 'Height');
-    if ($height !== null) {
-      $digits = englishDigits($height);
-      if (!preg_match('/^\d{1,3}$/', $digits) || (int)$digits < 1 || (int)$digits > 250) {
-        throw new InvalidArgumentException('قد ' . $role . ' باید عددی تا ۳ رقم و حداکثر ۲۵۰ باشد.');
-      }
-    }
-
-    $gender = formValue($form, $prefix . 'Gender');
-    if ($gender !== null && !in_array($gender, ['مرد', 'زن', 'نامشخص'], true)) {
-      throw new InvalidArgumentException('جنسیت ' . $role . ' باید مرد، زن یا نامشخص باشد.');
-    }
-
-    $bodyBuild = formValue($form, $prefix . 'BodyBuild');
-    if ($bodyBuild !== null && !in_array($bodyBuild, ['لاغر', 'معمولی', 'چاق'], true)) {
-      throw new InvalidArgumentException('اندام ' . $role . ' نامعتبر است.');
-    }
-
-    foreach ([
-      'FirstName' => 'نام',
-      'LastName' => 'نام خانوادگی',
-      'Nickname' => 'شهرت',
-      'Face' => 'رنگ پوست',
-      'HairStatus' => 'وضعیت موی سر',
-      'HairColor' => 'رنگ مو',
-      'Beard' => 'محاسن'
-    ] as $suffix => $label) {
-      $value = formValue($form, $prefix . $suffix);
-      if ($value !== null && preg_match('/[0-9۰-۹٠-٩]/u', $value)) {
-        throw new InvalidArgumentException($label . ' ' . $role . ' فقط باید شامل متن باشد.');
-      }
-    }
+function normalizePropertyPeople(array &$form): void {
+  // Flat role fields belonged to the preceding property design. The browser
+  // migrates a saved draft, but manual legacy payloads intentionally do not stay.
+  foreach (propertyPersonLegacyKeys() as $key) unset($form[$key]);
+  if (!array_key_exists('propertyPeople', $form)) return;
+  if (!is_array($form['propertyPeople'])) {
+    throw new InvalidArgumentException('بسته‌های مشخصات افراد مرتبط با ملک نامعتبر است.');
   }
 
-  foreach (['ownerIsResident' => 'ساکن هست', 'ownerIsVisitor' => 'تردد میکند'] as $key => $label) {
-    $value = formValue($form, $key);
-    if ($value !== null && $value !== 'بله') {
-      throw new InvalidArgumentException('وضعیت «' . $label . '» نامعتبر است.');
+  $allowedFields = ['firstName', 'lastName', 'nickname', 'phone', 'gender', 'height', 'bodyBuild', 'face', 'hairColor', 'hairStatus', 'beard', 'appearance'];
+  $normalizedPeople = [];
+  foreach (propertyPersonRoleLabels() as $role => $label) {
+    $entries = $form['propertyPeople'][$role] ?? [];
+    if (!is_array($entries)) {
+      throw new InvalidArgumentException('بسته‌های مشخصات ' . $label . ' نامعتبر است.');
+    }
+    if (count($entries) > MAX_PROPERTY_PEOPLE) {
+      throw new InvalidArgumentException('تعداد بسته‌های مشخصات ' . $label . ' بیش از حد مجاز است.');
+    }
+
+    $normalizedPeople[$role] = [];
+    foreach ($entries as $person) {
+      if (!is_array($person)) {
+        throw new InvalidArgumentException('بسته مشخصات ' . $label . ' نامعتبر است.');
+      }
+      $normalized = [];
+      foreach ($allowedFields as $field) {
+        if (!array_key_exists($field, $person)) continue;
+        if (!is_scalar($person[$field])) {
+          throw new InvalidArgumentException('مقدار مشخصات ' . $label . ' نامعتبر است.');
+        }
+        $value = trim((string)$person[$field]);
+        if ($value !== '') $normalized[$field] = $value;
+      }
+      if ($role === 'owner') {
+        foreach (['isResident', 'isVisitor'] as $flag) {
+          if (!array_key_exists($flag, $person)) continue;
+          if ($person[$flag] !== true) {
+            throw new InvalidArgumentException('وضعیت مالک نسبت به ملک نامعتبر است.');
+          }
+          $normalized[$flag] = true;
+        }
+      }
+      $normalizedPeople[$role][] = $normalized;
+    }
+  }
+  $form['propertyPeople'] = $normalizedPeople;
+}
+
+function validatePropertyPersonFields(array $form): void {
+  $people = $form['propertyPeople'] ?? [];
+  if (!is_array($people)) return;
+
+  foreach (propertyPersonRoleLabels() as $role => $label) {
+    $entries = $people[$role] ?? [];
+    if (!is_array($entries)) continue;
+    foreach ($entries as $person) {
+      if (!is_array($person)) continue;
+      $phone = formValue($person, 'phone');
+      if ($phone !== null && !preg_match('/^\d{11}$/', englishDigits($phone))) {
+        throw new InvalidArgumentException('شماره تماس ' . $label . ' باید دقیقاً ۱۱ رقم باشد.');
+      }
+
+      $height = formValue($person, 'height');
+      if ($height !== null) {
+        $digits = englishDigits($height);
+        if (!preg_match('/^\d{1,3}$/', $digits) || (int)$digits < 1 || (int)$digits > 250) {
+          throw new InvalidArgumentException('قد ' . $label . ' باید عددی تا ۳ رقم و حداکثر ۲۵۰ باشد.');
+        }
+      }
+
+      $gender = formValue($person, 'gender');
+      if ($gender !== null && !in_array($gender, ['مرد', 'زن', 'نامشخص'], true)) {
+        throw new InvalidArgumentException('جنسیت ' . $label . ' باید مرد، زن یا نامشخص باشد.');
+      }
+
+      $bodyBuild = formValue($person, 'bodyBuild');
+      if ($bodyBuild !== null && !in_array($bodyBuild, ['لاغر', 'معمولی', 'چاق'], true)) {
+        throw new InvalidArgumentException('اندام ' . $label . ' نامعتبر است.');
+      }
+
+      foreach (['firstName' => 'نام', 'lastName' => 'نام خانوادگی', 'nickname' => 'شهرت', 'face' => 'رنگ پوست', 'hairStatus' => 'وضعیت موی سر', 'hairColor' => 'رنگ مو', 'beard' => 'محاسن'] as $field => $fieldLabel) {
+        $value = formValue($person, $field);
+        if ($value !== null && preg_match('/[0-9۰-۹٠-٩]/u', $value)) {
+          throw new InvalidArgumentException($fieldLabel . ' ' . $label . ' فقط باید شامل متن باشد.');
+        }
+      }
     }
   }
 }
 
 function normalizePropertyFields(array &$form): void {
   // Fields from the retired, single-text property form must not survive drafts or
-  // manual submissions. Structured vehicle packages are retained for the new page.
+  // manual submissions. Structured vehicle and repeatable person packages remain.
   unset($form['propertyAddress'], $form['owners'], $form['activity']);
+  normalizePropertyPeople($form);
   if (array_key_exists('vehicles', $form) && !is_array($form['vehicles'])) unset($form['vehicles']);
+}
+
+function normalizeLocationDetailFields(array &$location): void {
+  // The one-box address field was replaced everywhere by four explicit fields.
+  unset($location['address']);
+  foreach (['postalCode', 'buildingPlaque', 'floor', 'unit'] as $key) {
+    if (!array_key_exists($key, $location)) continue;
+    if (!is_scalar($location[$key])) {
+      throw new InvalidArgumentException('جزئیات مکان وقوع نامعتبر است.');
+    }
+    $value = trim((string)$location[$key]);
+    if ($value === '') unset($location[$key]);
+    else $location[$key] = $value;
+  }
+
+  $mode = isset($location['mode']) && is_scalar($location['mode']) ? trim((string)$location['mode']) : '';
+  if ($mode === 'unknown') {
+    unset($location['postalCode'], $location['buildingPlaque'], $location['floor'], $location['unit']);
+  }
 }
 
 function normalizePropertyLocation(array &$location): void {
@@ -288,6 +379,7 @@ function normalize(array $input): array {
   validateFormFields($form, $category);
 
   $location = is_array($input['location'] ?? null) ? $input['location'] : [];
+  normalizeLocationDetailFields($location);
   if ($category === 'املاک') normalizePropertyLocation($location);
 
   $report = [
