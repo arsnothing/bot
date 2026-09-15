@@ -174,15 +174,22 @@ require __DIR__ . '/includes/header.php';
     <button class="back-button button-with-icon" onclick="backFromDocuments()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="4" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1 id="documentsPageTitle">مستندات گزارش</h1></div>
-    <label class="document-upload document-upload-card" for="documentInput">
-      <span class="document-upload-icon-wrap" aria-hidden="true"><?= buttonIcon('document-upload', 'button-icon upload-icon') ?></span>
-      <span class="document-upload-copy">
-        <strong>بارگذاری مستندات</strong>
-        <span id="documentUploadHelp" class="document-upload-help">یک یا چند فایل را هم‌زمان انتخاب کنید</span>
-      </span>
-      <span class="document-upload-limit">حداکثر ۱۰ فایل · هر فایل تا ۱۰۰ مگابایت</span>
-    </label>
-    <input id="documentInput" type="file" multiple hidden aria-describedby="documentUploadHelp" onchange="addDocuments(this)">
+    <section class="document-upload-field" data-document-upload-field aria-labelledby="documentUploadTitle">
+      <h2 id="documentUploadTitle" class="document-upload-label">بارگذاری مستندات</h2>
+      <p class="document-upload-description">یک یا چند تصویر، PDF یا فایل دیگر را هم‌زمان انتخاب کنید.</p>
+      <div class="document-upload-control">
+        <button id="documentUploadTrigger" class="document-upload-trigger button-with-icon" type="button" onclick="openDocumentPicker()" aria-controls="documentInput" aria-label="انتخاب یک یا چند فایل مستند">
+          <?= buttonIcon('document-upload', 'document-upload-trigger-icon') ?><span>بارگذاری مستندات</span>
+        </button>
+        <div class="document-upload-entry" aria-live="polite">
+          <span class="document-upload-prefix">مستندات</span>
+          <span id="documentUploadSummary" class="document-upload-summary">۰ از ۱۰ فایل · ۰ کیلوبایت از ۱۰۰ مگابایت</span>
+        </div>
+      </div>
+      <p id="documentUploadHelp" class="document-upload-helper">مجموع حجم همه فایل‌های این بخش حداکثر ۱۰۰ مگابایت است.</p>
+      <button id="documentAddButton" class="document-add-button button-with-icon" type="button" onclick="openDocumentPicker()"><?= buttonIcon('plus', 'document-add-icon') ?><span>افزودن مستندات دیگر</span></button>
+    </section>
+    <input id="documentInput" type="file" multiple hidden aria-describedby="documentUploadHelp documentUploadSummary" onchange="addDocuments(this)">
     <div id="documentList" class="document-list" aria-live="polite"></div>
     <div id="documentTransferStatus" class="document-transfer-status" hidden aria-live="polite"></div>
     <button class="primary-button" onclick="sendReport()" type="button">تایید و ثبت نهایی</button>

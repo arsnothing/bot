@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+// The 100 MiB allowance belongs to the entire document upload field, not each file.
+const MAX_DOCUMENT_TOTAL_BYTES = 104857600;
+
 function jsonResponse(array $payload, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
@@ -196,7 +199,13 @@ function normalize(array $input): array {
 
   $form = is_array($input['form'] ?? null) ? $input['form'] : [];
   // فیلدهای حذف‌شده در نسخه‌های قدیمی یا ارسال دستی ذخیره نمی‌شوند.
-  unset($form['priority'], $form['weight']);
+  unset(
+    $form['priority'],
+    $form['weight'],
+    $form['crimeMethod'],
+    $form['crimePlace'],
+    $form['crimeDate']
+  );
   normalizeSocialLinks($form);
   if (!formHasMeaningfulValue($form)) {
     throw new InvalidArgumentException('اطلاعات گزارش وارد نشده است.');
@@ -213,8 +222,12 @@ function normalize(array $input): array {
   ];
 
   if (isset($input['documents']) && is_array($input['documents'])) {
+    if (count($input['documents']) > 10) {
+      throw new InvalidArgumentException('حداکثر ۱۰ فایل قابل بارگذاری است.');
+    }
     $documents = [];
-    foreach (array_slice($input['documents'], 0, 10) as $document) {
+    $documentTotalBytes = 0;
+    foreach ($input['documents'] as $document) {
       if (!is_array($document)) continue;
       $name = isset($document['name']) && is_string($document['name']) ? trim($document['name']) : '';
       $data = isset($document['data']) && is_string($document['data']) ? $document['data'] : '';
@@ -225,15 +238,20 @@ function normalize(array $input): array {
         throw new InvalidArgumentException('محتوای فایل بارگذاری‌شده نامعتبر است.');
       }
       $contents = base64_decode($matches[2], true);
-      if ($contents === false || strlen($contents) > 100 * 1024 * 1024) {
-        throw new InvalidArgumentException('حجم هر فایل نباید بیشتر از ۱۰۰ مگابایت باشد.');
+      if ($contents === false) {
+        throw new InvalidArgumentException('محتوای فایل بارگذاری‌شده نامعتبر است.');
+      }
+      $decodedBytes = strlen($contents);
+      $documentTotalBytes += $decodedBytes;
+      if ($documentTotalBytes > MAX_DOCUMENT_TOTAL_BYTES) {
+        throw new InvalidArgumentException('مجموع حجم مستندات نباید بیشتر از ۱۰۰ مگابایت باشد.');
       }
       $mime = strtolower($matches[1]);
       $documents[] = [
         'type' => str_starts_with($mime, 'image/') ? 'image' : 'file',
         'name' => $name,
         'mime' => $mime,
-        'size' => strlen($contents),
+        'size' => $decodedBytes,
         'data' => $data
       ];
     }

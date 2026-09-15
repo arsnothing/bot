@@ -28,7 +28,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .form-shell{padding-bottom:52px}.section-title{font-weight:900;font-size:16px;color:var(--green);margin:22px 0 10px;padding:0 0 8px;border-bottom:1px solid var(--border)}.field-group{margin:12px 0}.field-group label{display:block;font-size:13px;font-weight:800;margin-bottom:7px}.field-input,.field-textarea{width:100%;background:#fff;border:1px solid var(--border);border-radius:15px;padding:12px 13px;outline:none;color:var(--text);font-size:15px}.field-input:focus,.field-textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(36,75,59,.08)}.field-textarea{min-height:96px;resize:vertical;line-height:1.85}.choice-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.choice-btn{min-height:48px;background:#fff;border:1px solid var(--border);border-radius:14px;color:var(--text);padding:9px 10px;font-weight:700}.choice-btn.selected{background:var(--green);border-color:var(--green);color:#fff}.form-actions,.page-action{margin-top:22px}.primary-button{width:100%;min-height:54px;border:0;border-radius:17px;background:var(--green);color:#fff;font-weight:900;font-size:16px;box-shadow:0 9px 21px rgba(36,75,59,.15)}.primary-button:disabled{opacity:.6;cursor:wait}
 .time-choices{margin-bottom:15px}.conditional-fields[hidden]{display:none}.date-row{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
 .location-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:11px}.location-choice{display:flex;align-items:center;justify-content:flex-start;gap:10px;text-align:right}.mini-icon{width:28px;height:28px;border-radius:9px;background:var(--green-soft);color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-size:19px}.map-wrap{display:none;margin:11px 0}.map-wrap.visible{display:block}.map-wrap #reportMap{height:330px;border-radius:19px;overflow:hidden}.status{min-height:22px;color:var(--green);font-size:13px;margin:8px 0}.location-fields{margin-top:8px}
-.document-upload{min-height:132px;border:1.5px dashed #b7c5bd;background:#fff;border-radius:21px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--green);margin:12px 0 14px}.document-upload svg{width:43px;height:43px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.document-upload strong{font-size:15px}.document-list{display:grid;gap:8px;margin-bottom:19px}.document-item{background:#fff;border:1px solid var(--border);border-radius:15px;padding:8px;display:flex;align-items:center;gap:10px}.document-item img{width:48px;height:48px;object-fit:cover;border-radius:10px;background:#eef2ef}.document-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.document-item button{border:0;background:transparent;color:#a33;font-weight:800;padding:7px}
+.document-list{display:grid;gap:8px;margin-bottom:19px}.document-item{background:#fff;border:1px solid var(--border);border-radius:15px;padding:8px;display:flex;align-items:center;gap:10px}.document-item img{width:48px;height:48px;object-fit:cover;border-radius:10px;background:#eef2ef}.document-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.document-item button{border:0;background:transparent;color:#a33;font-weight:800;padding:7px}
 .success-box{margin-top:14px;text-align:center;font-weight:800;color:var(--green);min-height:22px}
 @media(max-width:430px){.shell{padding-left:12px;padding-right:12px}.home-content{padding:25px 12px 34px}.home-logo{width:130px;height:130px}.welcome p{font-size:14px}.category-grid{gap:9px}.category-card{min-height:116px}.category-icon{width:43px;height:43px}.option-grid{gap:9px}.option-card{min-height:105px}.page-head h1{font-size:22px}.field-input,.field-textarea{font-size:14px}.choice-row{grid-template-columns:1fr 1fr}.stepper{gap:4px;font-size:10px}.stepper span{padding:5px 6px}.map-wrap #reportMap{height:290px}}
 
@@ -173,7 +173,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 #formPage .primary-button:hover, #timePage .primary-button:hover, #locationPage .primary-button:hover, #documentsPage .primary-button:hover { filter:none; transform:translateY(-1px); }
 
 #locationPage .map-wrap #reportMap { border:1px solid var(--border); box-shadow:0 8px 20px rgba(24,58,45,.06); }
-#documentsPage .document-upload, #documentsPage .document-item {
+#documentsPage .document-item {
   box-shadow:none;
   border-color:var(--border);
   background:#fff;
@@ -307,10 +307,6 @@ html,body{background:var(--bg);color:var(--text)}
 .primary-button:hover{background:var(--green-dark);transform:translateY(-1px);box-shadow:0 9px 20px rgba(36,75,59,.12)}
 .primary-button:active{transform:translateY(1px) scale(.99)}
 
-.document-upload{
-  border-color:#cfe0d6;background:#fff;border-radius:16px;color:var(--green);
-  box-shadow:none
-}
 .document-item{border-color:#e4ebe7;border-radius:12px;background:#fff}
 .mini-icon{background:var(--green-soft);color:var(--green)}
 .status,.success-box{color:var(--green)}
@@ -859,11 +855,6 @@ html,body{background:var(--bg);color:var(--text)}
   align-items:center;
   justify-content:center;
 }
-#documentsPage .document-upload .upload-icon{
-  width:46px;
-  height:46px;
-  color:var(--green);
-}
 .document-item .document-delete-button{
   display:inline-flex;
   align-items:center;
@@ -1121,8 +1112,8 @@ html,body{background:var(--bg);color:var(--text)}
   .construction-progress span{animation:none!important}
 }
 
-/* پنج مرحلهٔ گزارش افراد در یک ردیف جمع‌وجور و خوانا باقی می‌مانند. */
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
+/* رودمپ همه مسیرهای گزارش در بالای صفحه، به‌صورت آرام و یک‌خطی تغییر مرحله را نمایش می‌دهد. */
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard){
   display:flex;
   align-items:center;
   gap:0;
@@ -1134,7 +1125,7 @@ html,body{background:var(--bg);color:var(--text)}
   line-height:1.2;
   white-space:nowrap;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span{
   display:flex;
   flex:0 0 auto;
   align-items:center;
@@ -1148,42 +1139,52 @@ html,body{background:var(--bg);color:var(--text)}
   white-space:nowrap;
   word-break:keep-all;
   overflow-wrap:normal;
-  transition:background-color .48s ease,color .48s ease,box-shadow .48s ease,transform .48s ease,opacity .48s ease;
+  transition:background-color .32s ease,color .32s ease,box-shadow .32s ease,transform .32s ease,opacity .32s ease;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i{
   flex:1 1 28px;
   min-width:8px;
   height:1px;
   margin:auto 0;
   transform-origin:center;
-  transition:background-color .48s ease,opacity .48s ease,transform .48s ease;
+  transition:background-color .32s ease,opacity .32s ease,transform .32s ease;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people:not(.roadmap-ready) span{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) span{
   background:#eef2ef;
   color:#77817b;
   box-shadow:none;
   opacity:.72;
   transform:translateY(0);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people:not(.roadmap-ready) i{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) i{
   background:var(--border);
   opacity:.45;
   transform:scaleX(.55);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.done{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.done{
   opacity:.9;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.active{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.active{
   box-shadow:0 4px 10px rgba(36,75,59,.16);
   transform:translateY(-1px);
   transition-delay:.12s;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready i{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready i{
   opacity:1;
   transform:scaleX(1);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready i.done{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready i.done{
   background:#9bbda7;
+}
+/* مسیر پنج‌مرحله‌ای افراد عمداً آرام‌تر است تا تغییر هر مرحله خوانا بماند. */
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+  transition-duration:.62s;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+  transition-duration:.62s;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.active{
+  transition-delay:.18s;
 }
 
 #incidentReportPage{
@@ -1256,7 +1257,7 @@ html,body{background:var(--bg);color:var(--text)}
   transform:translateY(-1px);
 }
 @media(max-width:559px){
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard){
     overflow-x:auto;
     padding-bottom:4px;
     scroll-behavior:smooth;
@@ -1264,13 +1265,13 @@ html,body{background:var(--bg);color:var(--text)}
     scrollbar-width:none;
     -webkit-overflow-scrolling:touch;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people::-webkit-scrollbar{
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard)::-webkit-scrollbar{
     display:none;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span{
     scroll-snap-align:center;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i{
     flex:0 0 28px;
   }
 }
@@ -1290,8 +1291,8 @@ html,body{background:var(--bg);color:var(--text)}
   }
 }
 @media(prefers-reduced-motion:reduce){
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span,
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i,
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span,
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i,
   #incidentReportPage .form-section-fields .field-textarea{
     transition:none;
   }
@@ -1680,8 +1681,8 @@ html,body{background:var(--bg);color:var(--text)}
 }
 #formPage .iran-flag{
   display:block;
-  width:24px;
-  height:16px;
+  width:26px;
+  height:auto;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.82);
   border-radius:1px;
@@ -1698,6 +1699,36 @@ html,body{background:var(--bg);color:var(--text)}
 }
 #formPage .iran-plate-country-band b{font-size:6.2px}
 #formPage .iran-plate-country-band em{font-family:Tahoma,Arial,sans-serif;font-size:6px}
+#formPage .iran-plate-country-band--free-zone{
+  justify-content:flex-start;
+  gap:1px;
+  padding-top:4px;
+}
+#formPage .iran-plate-free-zone-badge{
+  display:grid;
+  place-items:center;
+  width:16px;
+  height:16px;
+  margin-top:auto;
+  border:1px solid rgba(255,255,255,.82);
+  border-radius:50%;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  font-size:5px;
+  font-weight:900;
+  line-height:1;
+}
+#formPage .iran-plate-country-band--free-zone small{
+  display:block;
+  margin-top:1px;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  font-size:3.6px;
+  font-weight:800;
+  letter-spacing:.1px;
+  line-height:1;
+  white-space:nowrap;
+}
 #formPage .vehicle-plate-preview > .vehicle-plate-value,
 #formPage .vehicle-plate-preview > .vehicle-plate-letter,
 #formPage .vehicle-plate-preview > .vehicle-plate-region{
@@ -1721,6 +1752,24 @@ html,body{background:var(--bg);color:var(--text)}
   width:100%;
   height:100%;
 }
+#formPage .vehicle-plate-wheelchair{
+  display:flex;
+  flex:0 0 43px;
+  align-items:center;
+  justify-content:center;
+  padding:0 4px;
+  border-left:1px solid rgba(23,34,29,.22);
+  color:#174b84;
+}
+#formPage .vehicle-plate-wheelchair-icon{
+  width:30px;
+  height:30px;
+  fill:none;
+  stroke:currentColor;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-width:2.35;
+}
 #formPage .vehicle-plate-value,
 #formPage .vehicle-plate-letter{direction:rtl}
 #formPage .vehicle-plate-value[data-preserve-latin="true"],
@@ -1738,9 +1787,12 @@ html,body{background:var(--bg);color:var(--text)}
 
 #formPage .vehicle-plate-preview--latin,
 #formPage .vehicle-plate-preview--protocol,
-#formPage .vehicle-plate-preview--free-zone,
 #formPage .vehicle-plate-preview--historical,
 #formPage .vehicle-plate-preview--motorcycle{min-height:68px}
+#formPage .vehicle-plate-preview--free-zone{
+  width:min(100%,245px);
+  min-height:104px;
+}
 #formPage .vehicle-plate-latin-copy,
 #formPage .vehicle-plate-protocol-copy,
 #formPage .vehicle-plate-free-zone-copy,
@@ -1771,8 +1823,72 @@ html,body{background:var(--bg);color:var(--text)}
 }
 #formPage .vehicle-plate-latin-copy .vehicle-plate-value,
 #formPage .vehicle-plate-protocol-copy .vehicle-plate-value{font-size:20px}
-#formPage .vehicle-plate-free-zone-copy{gap:9px}
-#formPage .vehicle-plate-free-zone-copy .vehicle-plate-value{font-size:19px}
+#formPage .vehicle-plate-free-zone-copy{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 50px;
+  align-items:stretch;
+  gap:0;
+  padding:0;
+  border-left:1px solid rgba(23,34,29,.22);
+}
+#formPage .vehicle-plate-free-zone-numbers{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  min-width:0;
+}
+#formPage .vehicle-plate-free-zone-numbers .vehicle-plate-value,
+#formPage .vehicle-plate-free-zone-latin{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  padding:4px 7px;
+  color:#18251e;
+}
+#formPage .vehicle-plate-free-zone-numbers .vehicle-plate-value{
+  border-bottom:1px solid rgba(23,34,29,.2);
+  font-size:26px;
+}
+#formPage .vehicle-plate-free-zone-latin{
+  direction:ltr;
+  font-family:Arial,sans-serif;
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+#formPage .vehicle-plate-free-zone-region{
+  display:grid;
+  grid-template-rows:1fr auto;
+  align-items:center;
+  min-width:0;
+  border-left:1px solid rgba(23,34,29,.22);
+  background:#f3f7fa;
+}
+#formPage .vehicle-plate-free-zone-region .vehicle-plate-value{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  padding:5px 3px 2px;
+  color:#174b84;
+  font-size:16px;
+}
+#formPage .vehicle-plate-free-zone-region small{
+  display:block;
+  min-width:0;
+  padding:3px 2px 5px;
+  border-top:1px solid rgba(23,34,29,.13);
+  color:#31483a;
+  direction:rtl;
+  font-family:Tahoma,Arial,sans-serif;
+  font-size:7px;
+  font-weight:900;
+  line-height:1.15;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 #formPage .vehicle-plate-motorcycle-copy{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -1799,7 +1915,7 @@ html,body{background:var(--bg);color:var(--text)}
   letter-spacing:0;
 }
 #formPage .vehicle-plate-preview--sample .iran-plate-country-band{flex-basis:28px;gap:1px;padding:2px 1px}
-#formPage .vehicle-plate-preview--sample .iran-flag{width:16px;height:10px}
+#formPage .vehicle-plate-preview--sample .iran-flag{width:18px;height:auto}
 #formPage .vehicle-plate-preview--sample .iran-plate-country-band b{font-size:3.1px}
 #formPage .vehicle-plate-preview--sample .iran-plate-country-band em{font-size:3px}
 #formPage .vehicle-plate-preview--sample > .vehicle-plate-value,
@@ -1821,6 +1937,21 @@ html,body{background:var(--bg);color:var(--text)}
 #formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy .vehicle-plate-value,
 #formPage .vehicle-plate-preview--sample .vehicle-plate-historical-copy .vehicle-plate-value,
 #formPage .vehicle-plate-preview--sample .vehicle-plate-motorcycle-copy .vehicle-plate-value{font-size:8px}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-wheelchair{flex-basis:19px;padding:0 1px}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-wheelchair-icon{width:15px;height:15px;stroke-width:2.4}
+#formPage .vehicle-plate-preview--free-zone.vehicle-plate-preview--sample{
+  width:108px;
+  min-width:108px;
+  min-height:46px;
+}
+#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone{flex-basis:29px;padding-top:2px}
+#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone .iran-plate-free-zone-badge,
+#formPage .vehicle-plate-preview--sample .iran-plate-country-band--free-zone small{display:none}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-copy{grid-template-columns:minmax(0,1fr) 23px;padding:0}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-numbers .vehicle-plate-value{padding:2px;font-size:9px}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-latin{padding:2px;font-size:5px;letter-spacing:.2px}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-region .vehicle-plate-value{padding:2px 1px;font-size:7px}
+#formPage .vehicle-plate-preview--sample .vehicle-plate-free-zone-region small{padding:1px;font-size:3.5px}
 #formPage .vehicle-plate-inputs{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
@@ -1845,8 +1976,6 @@ html,body{background:var(--bg);color:var(--text)}
 #formPage .vehicle-plate-input[data-preserve-latin="true"]{text-align:left}
 #formPage .vehicle-plate-field.is-no-plate .vehicle-plate-description,
 #formPage .vehicle-plate-field.is-no-plate .vehicle-plate-editor{opacity:.72}
-.document-upload{cursor:pointer}
-.document-upload-help{color:#819087;font-size:11px;font-weight:400}
 .document-item .document-item-copy{
   display:flex;
   flex:1 1 auto;
@@ -1897,79 +2026,153 @@ html,body{background:var(--bg);color:var(--text)}
 #formPage .form-section-fields .vehicle-plate-input{ text-align:center; }
 #formPage .form-section-fields .vehicle-plate-input[data-preserve-latin="true"]{ text-align:left; }
 
-/* کارت چندفایلی و پیشرفت واقعی خواندن/ارسال مستندات */
-#documentsPage .document-upload-card{
-  display:grid;
-  grid-template-columns:54px minmax(0,1fr);
-  align-items:center;
-  gap:11px;
-  min-height:0;
-  margin:12px 0 11px;
-  padding:15px;
-  border:1.5px dashed #a9c5b4;
-  border-radius:16px;
-  background:linear-gradient(135deg,#fbfdfc,#f4faf6);
-  color:var(--green-dark);
-  text-align:right;
-  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease,transform .18s ease;
+/* مستندات با همان زبان بصری نشانی‌های فضای مجازی */
+#documentsPage .document-upload-field{
+  margin:4px 0 12px;
+  padding:14px;
+  border:1px solid #dce7e1;
+  border-radius:14px;
+  background:#f9fcfa;
 }
-#documentsPage .document-upload-card:hover{
-  border-color:#7eab90;
-  background:#f5fbf7;
-  box-shadow:0 8px 18px rgba(36,75,59,.08);
-  transform:translateY(-1px);
+#documentsPage .document-upload-label{
+  margin:0 0 5px;
+  color:var(--text);
+  font-size:13px;
+  font-weight:800;
 }
-#documentsPage .document-upload-icon-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:54px;
-  height:54px;
-  border-radius:13px;
-  background:#e7f2eb;
-  color:var(--green);
-}
-#documentsPage .document-upload-card .upload-icon{
-  width:29px;
-  height:29px;
-}
-#documentsPage .document-upload-copy{
-  display:flex;
-  flex-direction:column;
-  min-width:0;
-  gap:4px;
-}
-#documentsPage .document-upload-card strong{
-  color:var(--green-dark);
-  font-size:14px;
-}
-#documentsPage .document-upload-card .document-upload-help{
+#documentsPage .document-upload-description,
+#documentsPage .document-upload-helper{
+  margin:0;
   color:#718078;
   font-size:11px;
-  font-weight:500;
-  line-height:1.65;
+  line-height:1.75;
 }
-#documentsPage .document-upload-limit{
-  grid-column:1 / -1;
-  width:max-content;
-  max-width:100%;
+#documentsPage .document-upload-description{margin-bottom:10px}
+#documentsPage .document-upload-control{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+  padding:10px;
+  border:1px solid #dfe9e3;
+  border-radius:13px;
+  background:#fff;
+}
+#documentsPage .document-upload-trigger{
+  display:inline-flex;
+  flex:0 0 136px;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:48px;
   padding:5px 8px;
-  border-radius:7px;
-  background:#e8f3eb;
-  color:#51705d;
-  font-size:10px;
-  font-weight:700;
-  line-height:1.4;
+  border:1px solid #cfddd5;
+  border-radius:10px;
+  background:#fff;
+  color:var(--green-dark);
+  font-family:inherit;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.25;
+  cursor:pointer;
+  transition:border-color .18s ease,background-color .18s ease,transform .18s ease;
 }
-#documentsPage .document-upload-card.is-reading .document-upload-icon-wrap{
+#documentsPage .document-upload-trigger:hover{
+  border-color:#9dbbaa;
+  background:var(--green-soft);
+}
+#documentsPage .document-upload-trigger:active{transform:translateY(1px)}
+#documentsPage .document-upload-trigger:focus-visible,
+#documentsPage .document-add-button:focus-visible{
+  outline:0;
+  border-color:#89ab97;
+  box-shadow:0 0 0 3px rgba(36,75,59,.1);
+}
+#documentsPage .document-upload-trigger-icon{
+  width:19px;
+  height:19px;
+  flex:0 0 auto;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+#documentsPage .document-upload-entry{
+  display:flex;
+  flex:1 1 0;
+  align-items:center;
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #d9e4de;
+  border-radius:10px;
+  background:#fff;
+}
+#documentsPage .document-upload-prefix{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  min-height:46px;
+  padding:0 9px;
+  border-left:1px solid #dce6e0;
+  background:#f2f7f4;
+  color:#466154;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+#documentsPage .document-upload-summary{
+  min-width:0;
+  padding:0 10px;
+  overflow:hidden;
+  color:#52695c;
+  font-size:12px;
+  font-weight:700;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#documentsPage .document-upload-helper{margin-top:8px}
+#documentsPage .document-add-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:42px;
+  margin-top:10px;
+  padding:8px 12px;
+  border:1px dashed #abc5b5;
+  border-radius:10px;
+  background:#fff;
+  color:var(--green);
+  font-family:inherit;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  transition:border-color .18s ease,background-color .18s ease,transform .18s ease;
+}
+#documentsPage .document-add-button:hover{
+  border-color:#6d9b7f;
+  background:var(--green-soft);
+  transform:translateY(-1px);
+}
+#documentsPage .document-add-button:active{transform:translateY(1px)}
+#documentsPage .document-add-icon{width:17px;height:17px}
+#documentsPage .document-upload-field.is-reading .document-upload-trigger-icon{
   animation:document-upload-pulse 1.3s ease-in-out infinite;
 }
-#documentsPage .document-upload-card.is-full{
+#documentsPage .document-upload-field.is-full .document-upload-control{
+  border-color:#dbe7df;
+  background:#fbfcfb;
+}
+#documentsPage .document-upload-trigger:disabled,
+#documentsPage .document-add-button:disabled{
   cursor:not-allowed;
-  opacity:.7;
+  border-color:#e2e9e5;
+  background:#f7f9f8;
+  color:#98a39d;
+  transform:none;
 }
 @keyframes document-upload-pulse{
-  50%{transform:scale(.93);background:#d6ebdd}
+  50%{transform:scale(.9);opacity:.58}
 }
 #documentsPage .document-empty-state{
   display:flex;
@@ -2057,17 +2260,21 @@ html,body{background:var(--bg);color:var(--text)}
   #formPage .vehicle-card-heading h3{font-size:13px}
   #formPage .vehicle-plate-preview--latin,
   #formPage .vehicle-plate-preview--protocol,
-  #formPage .vehicle-plate-preview--free-zone,
   #formPage .vehicle-plate-preview--historical,
   #formPage .vehicle-plate-preview--motorcycle{min-height:60px}
-  #documentsPage .document-upload-card{grid-template-columns:48px minmax(0,1fr);padding:13px}
-  #documentsPage .document-upload-icon-wrap{width:48px;height:48px}
+  #formPage .vehicle-plate-preview--free-zone{min-height:86px}
+  #documentsPage .document-upload-control{gap:6px}
+  #documentsPage .document-upload-trigger{flex-basis:118px;font-size:10px}
+  #documentsPage .document-upload-prefix{padding:0 7px;font-size:10px}
+  #documentsPage .document-upload-summary{font-size:10.5px}
 }
 @media(prefers-reduced-motion:reduce){
   #formPage .vehicle-add-button,
   #formPage .vehicle-remove-button,
-  #documentsPage .document-upload-card,
+  #documentsPage .document-upload-field,
+  #documentsPage .document-upload-trigger,
+  #documentsPage .document-add-button,
   #documentsPage .document-transfer-track > i{transition:none}
-  #documentsPage .document-upload-card.is-reading .document-upload-icon-wrap,
+  #documentsPage .document-upload-field.is-reading .document-upload-trigger-icon,
   #documentsPage .document-transfer-track.is-indeterminate > i{animation:none}
 }
