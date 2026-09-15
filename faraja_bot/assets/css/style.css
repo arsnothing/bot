@@ -823,3 +823,143 @@ html,body{background:var(--bg);color:var(--text)}
   .construction-status span,
   .construction-progress span{animation:none!important}
 }
+
+/* مسیر اختصاصی گزارش افراد: پنج گام خوانا با فاصله‌گذاری یکنواخت. */
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  min-width:0;
+  margin:3px 0 18px;
+  color:#77817b;
+  font-size:10px;
+  font-weight:800;
+  white-space:normal;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+  display:flex;
+  flex:1 1 0;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:38px;
+  padding:6px 4px;
+  border-radius:10px;
+  line-height:1.35;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+  flex:0 1 13px;
+  min-width:5px;
+  height:1px;
+  margin:auto 0;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i.done{
+  background:#9bbda7;
+}
+
+#incidentReportPage{
+  background:var(--bg);
+}
+#incidentReportPage .shell{
+  max-width:760px;
+}
+#incidentReportPage .page-head{
+  padding:8px 2px 17px;
+}
+#incidentReportPage .page-head h1{
+  color:var(--green-dark);
+  font-size:22px;
+  font-weight:900;
+}
+#incidentReportPage .incident-report-card{
+  padding:20px;
+  border:1px solid #e1e9e4;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(24,58,45,.045);
+}
+#incidentReportPage .form-section-heading{
+  padding-bottom:15px;
+  border-bottom:1px solid #e5ece8;
+}
+#incidentReportPage .form-section-heading h2{
+  margin:0;
+  color:var(--green-dark);
+  font-size:19px;
+  font-weight:900;
+  line-height:1.6;
+}
+#incidentReportPage .form-section-heading p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.9;
+}
+#incidentReportPage .form-section-fields{
+  margin-top:16px;
+}
+#incidentReportPage .form-section-fields .field-group{
+  margin:0 0 17px;
+}
+#incidentReportPage .form-section-fields .field-group:last-child{
+  margin-bottom:0;
+}
+#incidentReportPage .form-section-fields .field-input,
+#incidentReportPage .form-section-fields .field-textarea{
+  border-color:#dce6e0!important;
+  border-radius:12px!important;
+}
+#incidentReportPage .form-section-fields .field-textarea{
+  min-height:52px;
+  height:52px;
+  max-height:280px;
+  overflow-y:hidden;
+  resize:none;
+  line-height:1.7;
+  transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
+}
+#incidentReportPage .primary-button{
+  background:var(--green)!important;
+  box-shadow:0 9px 21px rgba(36,75,59,.15)!important;
+}
+#incidentReportPage .primary-button:hover{
+  filter:none;
+  transform:translateY(-1px);
+}
+@media(max-width:430px){
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
+    gap:2px;
+    margin-bottom:18px;
+    font-size:10px;
+  }
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+    min-height:42px;
+    padding:5px 3px;
+    border-radius:8px;
+  }
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+    flex-basis:7px;
+    min-width:4px;
+  }
+  #incidentReportPage .incident-report-card{
+    padding:17px 14px;
+    border-radius:16px;
+  }
+  #incidentReportPage .form-section-heading h2{
+    font-size:18px;
+  }
+  #incidentReportPage .form-section-fields{
+    margin-top:14px;
+  }
+  #incidentReportPage .form-section-fields .field-group{
+    margin-bottom:15px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #incidentReportPage .form-section-fields .field-textarea{
+    transition:none;
+  }
+}

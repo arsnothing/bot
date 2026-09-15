@@ -24,6 +24,34 @@ function canonicalCategory(category) {
   return CATEGORY_ALIASES[category] || category;
 }
 
+const STANDARD_REPORT_STEPS = Object.freeze(['فرم', 'زمان', 'مکان', 'تصویر']);
+const PEOPLE_REPORT_STEPS = Object.freeze([
+  'اطلاعات شناسایی',
+  'زمان وقوع',
+  'مکان وقوع',
+  'گزارش وقوع',
+  'مستندات'
+]);
+
+function renderReportRoadmaps() {
+  const isPeopleReport = state.category === 'افراد';
+  const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
+  const stepAttribute = isPeopleReport ? 'peopleStep' : 'standardStep';
+
+  document.querySelectorAll('[data-report-roadmap]').forEach(stepper => {
+    const activeStep = Number(stepper.dataset[stepAttribute]);
+    stepper.classList.toggle('report-stepper--people', isPeopleReport);
+    stepper.innerHTML = steps.map((label, index) => {
+      const stateClass = index < activeStep ? 'done' : index === activeStep ? 'active' : '';
+      const current = index === activeStep ? ' aria-current="step"' : '';
+      const connector = index < steps.length - 1
+        ? `<i${index < activeStep ? ' class="done"' : ''} aria-hidden="true"></i>`
+        : '';
+      return `<span class="${stateClass}"${current}>${label}</span>${connector}`;
+    }).join('');
+  });
+}
+
 function iconMarkup(name, className = 'button-icon') {
   return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
 }
@@ -62,7 +90,7 @@ function normalizeFieldValue(element) {
 }
 
 function resizeTextarea(textarea) {
-  if (!textarea.matches('#formBody textarea[data-auto-resize="true"]')) return;
+  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"]')) return;
   const maxHeight = 280;
   textarea.style.height = 'auto';
   const height = Math.min(Math.max(textarea.scrollHeight, 52), maxHeight);
@@ -94,6 +122,7 @@ function showPage(id) {
   const page = document.getElementById(id);
   if (!page) return;
   page.classList.add('active');
+  renderReportRoadmaps();
   window.scrollTo({ top: 0, behavior: 'instant' });
   setTimeout(normalizeVisibleNumbers, 0);
 }
@@ -193,7 +222,7 @@ function fieldValidationMessage(element) {
 }
 
 function validateVisibleFormFields() {
-  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation]'))
+  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation], #incidentReportBody [data-validation]'))
     .map(element => ({ element, message: fieldValidationMessage(element) }))
     .find(item => item.message);
 
@@ -269,10 +298,30 @@ function personForm() {
     formSection('ارتباط و فضای مجازی',
       `${field('phoneFixed','تلفن ثابت','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneMobile','تلفن همراه','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneWork','تلفن محل کار','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneHome','تلفن منزل','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('social','نشانی‌های فضای مجازی','textarea')}`,
       'راه‌های ارتباطی یا نشانی‌های مرتبط را وارد کنید.'),
-    formSection('موضوع گزارش',
-      `${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}${field('crimeType','نوع جرم یا تخلف','textarea')}${field('crimeMethod','نحوه ارتکاب و ترتیب وقوع','textarea')}${field('crimePlace','آدرس و مشخصات مکان وقوع','textarea')}${field('crimeDate','زمان وقوع یا زمان احتمالی','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
-      'جزئیات رخداد و نحوه اطلاع خود را ثبت کنید.')
+    formSection('نشانی‌های مرتبط',
+      `${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}`,
+      'نشانی‌های شناخته‌شده و مرتبط با فرد را وارد کنید.')
   ];
+}
+
+function incidentReportSection() {
+  return formSection('شرح و جزئیات وقوع',
+    `${field('crimeType','نوع جرم یا تخلف','textarea')}${field('crimeMethod','نحوه ارتکاب و ترتیب وقوع','textarea')}${field('crimePlace','آدرس و مشخصات مکان وقوع','textarea')}${field('crimeDate','زمان وقوع یا زمان احتمالی','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+    'جزئیات رخداد و نحوه اطلاع خود را ثبت کنید.');
+}
+
+function renderIncidentReport() {
+  const section = incidentReportSection();
+  document.getElementById('incidentReportBody').innerHTML = `
+    <section class="form-section-card incident-report-card" aria-labelledby="incidentReportSectionTitle">
+      <header class="form-section-heading">
+        <h2 id="incidentReportSectionTitle">${section.title}</h2>
+        <p>${section.description}</p>
+      </header>
+      <div class="form-section-fields">${section.fields}</div>
+    </section>`;
+  restoreFormValues();
+  setTimeout(normalizeVisibleNumbers, 0);
 }
 
 function propertyForm() {
@@ -407,12 +456,12 @@ function collectForm() {
   const data = { ...state.form };
   delete data.priority;
   delete data.weight;
-  document.querySelectorAll('#formBody [data-field]').forEach(element => {
+  document.querySelectorAll('#formBody [data-field], #incidentReportBody [data-field]').forEach(element => {
     const value = element.value.trim();
     if (value) data[element.dataset.field] = value;
     else delete data[element.dataset.field];
   });
-  document.querySelectorAll('#formBody [data-choice]').forEach(row => {
+  document.querySelectorAll('#formBody [data-choice], #incidentReportBody [data-choice]').forEach(row => {
     const selected = row.querySelector('.selected');
     if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
     else delete data[row.dataset.choice];
@@ -422,9 +471,9 @@ function collectForm() {
 
 function restoreFormValues() {
   Object.entries(state.form).forEach(([name, value]) => {
-    const fieldElement = document.querySelector(`#formBody [data-field="${CSS.escape(name)}"]`);
+    const fieldElement = document.querySelector(`#formBody [data-field="${CSS.escape(name)}"], #incidentReportBody [data-field="${CSS.escape(name)}"]`);
     if (fieldElement) fieldElement.value = value;
-    const row = document.querySelector(`#formBody [data-choice="${CSS.escape(name)}"]`);
+    const row = document.querySelector(`#formBody [data-choice="${CSS.escape(name)}"], #incidentReportBody [data-choice="${CSS.escape(name)}"]`);
     if (row) {
       row.querySelectorAll('.choice-btn').forEach(button => {
         if (button.textContent.trim() === value) {
@@ -434,7 +483,7 @@ function restoreFormValues() {
       });
     }
   });
-  document.querySelectorAll('#formBody textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+  document.querySelectorAll('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"]').forEach(resizeTextarea);
 }
 
 function continueForm() {
@@ -575,10 +624,34 @@ function continueLocation() {
   state.location.city = document.getElementById('city').value.trim();
   state.location.address = document.getElementById('address').value.trim();
   if (state.location.known === undefined) state.location.known = false;
+  if (state.category === 'افراد') return openIncidentReport();
   openDocuments();
 }
 
+function openIncidentReport() {
+  renderIncidentReport();
+  showPage('incidentReportPage');
+}
+
+function continueIncidentReport() {
+  collectForm();
+  if (!validateVisibleFormFields()) return;
+  openDocuments();
+}
+
+function backFromIncidentReport() {
+  collectForm();
+  openLocation();
+}
+
+function backFromDocuments() {
+  if (state.category === 'افراد') return openIncidentReport();
+  showPage('locationPage');
+}
+
 function openDocuments() {
+  const title = document.getElementById('documentsPageTitle');
+  if (title) title.textContent = state.category === 'افراد' ? 'مستندات گزارش' : 'تصویر گزارش';
   renderDocuments();
   showPage('documentsPage');
 }
@@ -644,4 +717,5 @@ async function sendReport() {
   }
 }
 
+renderReportRoadmaps();
 normalizeVisibleNumbers();

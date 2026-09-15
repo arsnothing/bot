@@ -109,7 +109,7 @@ require __DIR__ . '/includes/header.php';
 <section id="formPage" class="page">
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromForm()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="stepper"><span class="active">فرم</span><i></i><span>زمان</span><i></i><span>مکان</span><i></i><span>تصویر</span></div>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="0" data-people-step="0" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1 id="formTitle">ثبت گزارش</h1></div>
     <div id="formBody"></div>
     <div id="formActions" class="form-actions"></div>
@@ -119,7 +119,7 @@ require __DIR__ . '/includes/header.php';
 <section id="timePage" class="page">
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('formPage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="stepper"><span class="done">فرم</span><i class="done"></i><span class="active">زمان</span><i></i><span>مکان</span><i></i><span>تصویر</span></div>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="1" data-people-step="1" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1>زمان وقوع</h1></div>
     <div class="choice-row time-choices">
       <button class="choice-btn button-with-icon" data-time="الان" onclick="setTimeMode(this,'الان')" type="button"><?= buttonIcon('clock-now') ?><span>الان</span></button>
@@ -145,7 +145,7 @@ require __DIR__ . '/includes/header.php';
 <section id="locationPage" class="page">
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('timePage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="stepper"><span class="done">فرم</span><i class="done"></i><span class="done">زمان</span><i class="done"></i><span class="active">مکان</span><i></i><span>تصویر</span></div>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1>مکان</h1></div>
     <div class="location-actions">
       <button class="choice-btn location-choice" onclick="useCurrentLocation()" type="button"><?= buttonIcon('target', 'mini-svg') ?><span>موقعیت فعلی</span></button>
@@ -163,11 +163,21 @@ require __DIR__ . '/includes/header.php';
   </main>
 </section>
 
+<section id="incidentReportPage" class="page">
+  <main class="shell incident-report-shell">
+    <button class="back-button button-with-icon" onclick="backFromIncidentReport()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="3" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>گزارش وقوع</h1></div>
+    <div id="incidentReportBody"></div>
+    <button class="primary-button page-action button-with-icon" onclick="continueIncidentReport()" type="button"><?= buttonIcon('check', 'button-icon action-icon') ?><span>تأیید گزارش وقوع</span></button>
+  </main>
+</section>
+
 <section id="documentsPage" class="page">
   <main class="shell">
-    <button class="back-button button-with-icon" onclick="showPage('locationPage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="stepper"><span class="done">فرم</span><i class="done"></i><span class="done">زمان</span><i class="done"></i><span class="done">مکان</span><i class="done"></i><span class="active">تصویر</span></div>
-    <div class="page-head"><h1>تصویر گزارش</h1></div>
+    <button class="back-button button-with-icon" onclick="backFromDocuments()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="4" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1 id="documentsPageTitle">تصویر گزارش</h1></div>
     <label class="document-upload" for="documentInput">
       <?= buttonIcon('image-upload', 'button-icon upload-icon') ?>
       <strong>افزودن تصویر</strong>
