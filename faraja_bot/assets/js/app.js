@@ -33,6 +33,12 @@ const PEOPLE_REPORT_STEPS = Object.freeze([
   'گزارش وقوع',
   'مستندات'
 ]);
+const PROPERTY_REPORT_STEPS = Object.freeze([
+  'مکان وقوع',
+  'زمان وقوع',
+  'گزارش وقوع',
+  'مستندات'
+]);
 
 const DRAFT_STORAGE_KEY = 'faraja-report-draft-v1';
 const DRAFT_VERSION = 2;
@@ -50,10 +56,19 @@ const RESTORABLE_PAGE_IDS = new Set([
   'documentsPage'
 ]);
 const RETIRED_INCIDENT_FIELD_KEYS = Object.freeze(['crimeMethod', 'crimePlace', 'crimeDate']);
+const RETIRED_PROPERTY_FIELD_KEYS = Object.freeze(['propertyAddress', 'owners', 'activity']);
 
 function clearRetiredIncidentFields(form = state.form) {
   if (!isPlainRecord(form)) return;
   RETIRED_INCIDENT_FIELD_KEYS.forEach(key => delete form[key]);
+}
+
+function clearRetiredPropertyFields(form = state.form) {
+  if (!isPlainRecord(form)) return;
+  RETIRED_PROPERTY_FIELD_KEYS.forEach(key => delete form[key]);
+  // Earlier property drafts stored vehicle details as a plain text field. The new
+  // property vehicle page uses the same structured collection as the people report.
+  if (form.vehicles !== undefined && !Array.isArray(form.vehicles)) delete form.vehicles;
 }
 
 let timeDraft = null;
@@ -130,15 +145,28 @@ function activateRoadmapsAfterPaint(sequence) {
 
 function renderReportRoadmaps() {
   const isPeopleReport = state.category === 'افراد';
-  const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
-  const stepAttribute = isPeopleReport ? 'peopleStep' : 'standardStep';
+  const isPropertyReport = state.category === 'املاک';
+  const usesDetailedRoadmapPresentation = isPeopleReport || isPropertyReport;
+  const steps = isPeopleReport
+    ? PEOPLE_REPORT_STEPS
+    : isPropertyReport
+      ? PROPERTY_REPORT_STEPS
+      : STANDARD_REPORT_STEPS;
+  const stepAttribute = isPeopleReport
+    ? 'peopleStep'
+    : isPropertyReport
+      ? 'propertyStep'
+      : 'standardStep';
   const signature = steps.join('|');
   const sequence = ++roadmapTransitionSequence;
 
   document.querySelectorAll('[data-report-roadmap]').forEach(stepper => {
     const activeStep = Number(stepper.dataset[stepAttribute]);
-    stepper.classList.toggle('report-stepper--people', isPeopleReport);
-    stepper.classList.toggle('report-stepper--standard', !isPeopleReport);
+    // Properties intentionally use the same compact, slower roadmap presentation
+    // as people reports, with their own four requested labels and stage order.
+    stepper.classList.toggle('report-stepper--people', usesDetailedRoadmapPresentation);
+    stepper.classList.toggle('report-stepper--property', isPropertyReport);
+    stepper.classList.toggle('report-stepper--standard', !usesDetailedRoadmapPresentation);
     stepper.classList.remove('roadmap-ready');
 
     if (stepper.dataset.roadmapSteps !== signature) {
@@ -328,8 +356,10 @@ function restoreReportDraft() {
   state.subtype = typeof savedState.subtype === 'string' ? savedState.subtype : '';
   state.form = isPlainRecord(savedState.form) ? { ...savedState.form } : {};
   clearRetiredIncidentFields(state.form);
+  if (state.category === 'املاک') clearRetiredPropertyFields(state.form);
   state.formStep = Number.isInteger(savedState.formStep) && savedState.formStep >= 0 ? savedState.formStep : 0;
   state.location = isPlainRecord(savedState.location) ? { ...savedState.location } : {};
+  normalizeLocationForCategory();
   state.time = isPlainRecord(savedState.time) ? { ...savedState.time } : {};
   state.documents = [];
   timeDraft = restoredTimeDraft(snapshot.timeDraft);
@@ -339,7 +369,7 @@ function restoreReportDraft() {
   if (needsCategory.has(pageId) && !state.category) pageId = 'categoryPage';
   if (pageId === 'objectTypePage' && state.category !== 'اشیاء') pageId = 'categoryPage';
   if (pageId === 'phenomenonTypePage' && state.category !== 'رویداد') pageId = 'categoryPage';
-  if (pageId === 'incidentReportPage' && state.category !== 'افراد') pageId = 'locationPage';
+  if (pageId === 'incidentReportPage' && state.category !== 'افراد') pageId = state.category === 'املاک' ? 'formPage' : 'locationPage';
 
   isRestoringDraft = true;
   try {
@@ -493,12 +523,22 @@ function openLocationRegistration() {
 function chooseCategory(category) {
   category = canonicalCategory(category);
   if (!REPORT_CATEGORIES.has(category)) return showPage('categoryPage');
+  // Selecting a category begins a fresh report. In particular, a map point or
+  // unknown-location data from a previously abandoned category must not leak
+  // into the property route, where location is its first required stage.
   state.category = category;
   state.subtype = '';
   state.form = {};
   state.formStep = 0;
+  state.location = {};
+  state.time = {};
+  state.documents = [];
+  timeDraft = null;
+  locationRequestSequence += 1;
+  clearLocationMarker();
   if (category === 'اشیاء') return showPage('objectTypePage');
   if (category === 'رویداد') return showPage('phenomenonTypePage');
+  if (category === 'املاک') return openLocation();
   openForm();
 }
 
@@ -1368,7 +1408,10 @@ function formSection(title, fields, description) {
 }
 
 function openForm() {
-  const title = state.subtype ? `${state.category} — ${state.subtype}` : state.category;
+  if (state.category === 'املاک') clearRetiredPropertyFields();
+  const title = state.category === 'املاک'
+    ? 'گزارش وقوع'
+    : state.subtype ? `${state.category} — ${state.subtype}` : state.category;
   const sections = buildForm(state.category, state.subtype);
   if (!sections.length) return showPage('categoryPage');
   state.formStep = Math.min(Math.max(Number(state.formStep) || 0, 0), sections.length - 1);
@@ -1399,7 +1442,9 @@ function renderFormSection(sections = buildForm(state.category, state.subtype)) 
     </section>`;
 
   const actions = document.getElementById('formActions');
-  const primaryLabel = isLast ? 'تایید فرم شناسایی' : 'مرحله بعد';
+  const primaryLabel = isLast
+    ? state.category === 'املاک' ? 'تایید گزارش وقوع' : 'تایید فرم شناسایی'
+    : 'مرحله بعد';
   actions.className = `form-actions${state.formStep === 0 ? ' first-step' : ''}`;
   actions.innerHTML = `
     ${state.formStep > 0 ? `<button class="secondary-button" onclick="previousFormSection()" type="button">مرحله قبل</button>` : ''}
@@ -1456,15 +1501,55 @@ function renderIncidentReport() {
   setTimeout(normalizeVisibleNumbers, 0);
 }
 
+function propertyPersonRoleToggle(name, label) {
+  const checked = state.form[name] === 'بله' ? ' checked' : '';
+  return `<label class="property-person-role-toggle"><input type="checkbox" data-property-role-toggle data-property-role-field="${name}" onchange="persistReportDraft()"${checked}><span>${label}</span></label>`;
+}
+
+function propertyPersonDetailsMarkup(prefix, title, options = {}) {
+  const name = suffix => `${prefix}${suffix}`;
+  const ownerToggles = options.owner
+    ? `<div class="property-person-role-toggles" role="group" aria-label="وضعیت مالک نسبت به ملک">
+        ${propertyPersonRoleToggle(name('IsResident'), 'ساکن هست')}
+        ${propertyPersonRoleToggle(name('IsVisitor'), 'تردد میکند')}
+      </div>`
+    : '';
+
+  return `<section class="property-person-group" aria-labelledby="${prefix}DetailsTitle">
+    <h3 id="${prefix}DetailsTitle" class="property-person-group-title">${title}:</h3>
+    <div class="property-person-basic-fields">
+      ${field(name('FirstName'), 'نام', 'text', { textOnly: true })}
+      ${field(name('LastName'), 'نام خانوادگی', 'text', { textOnly: true })}
+      ${field(name('Nickname'), 'شهرت', 'text', { textOnly: true })}
+      ${field(name('Phone'), 'شماره تماس', 'text', { numeric: true, maxLength: 11, validation: 'phone' })}
+    </div>
+    ${choices(name('Gender'), 'جنسیت', ['مرد', 'زن', 'نامشخص'], { columns: 3 })}
+    ${ownerToggles}
+    <h4 class="property-person-appearance-title">مشخصات ظاهری</h4>
+    <div class="property-person-appearance-fields">
+      ${field(name('Height'), 'قد', 'text', { numeric: true, maxLength: 3, maxValue: 250, validation: 'height' })}
+      ${choices(name('BodyBuild'), 'اندام', ['لاغر', 'معمولی', 'چاق'], { columns: 3 })}
+      ${field(name('Face'), 'رنگ پوست', 'text', { textOnly: true })}
+      ${field(name('HairColor'), 'رنگ مو', 'text', { textOnly: true })}
+      ${field(name('HairStatus'), 'وضعیت موی سر', 'text', { textOnly: true })}
+      ${field(name('Beard'), 'محاسن', 'text', { textOnly: true })}
+      ${field(name('Appearance'), 'ویژگی خاص', 'textarea', { placeholder: 'شامل زخم، تتو، معلولیت و موارد بارز دیگر' })}
+    </div>
+  </section>`;
+}
+
 function propertyForm() {
   return [
     formSection('مشخصات و محل ملک',
-      `${field('propertyAddress','آدرس ملک','textarea')}${field('owners','مشخصات صاحبان یا ساکنان','textarea')}${field('vehicles','مشخصات خودرو و موتورسیکلت‌های مرتبط','textarea')}`,
-      'موقعیت و افراد یا وسایل مرتبط با ملک را وارد کنید.'),
-    formSection('فعالیت و حفاظت ملک',
-      `${field('activity','نوع فعالیت احتمالی','textarea')}${field('security','سیستم حفاظت و کنترل','textarea')}${field('specialSecurity','اقدامات حفاظتی و کنترل خاص','textarea')}`,
-      'وضعیت فعالیت و تمهیدات حفاظتی محل را شرح دهید.'),
-    formSection('موضوع گزارش',
+      `${propertyPersonDetailsMarkup('owner', 'مشخصات مالکین', { owner: true })}${propertyPersonDetailsMarkup('resident', 'ساکنین')}${propertyPersonDetailsMarkup('visitor', 'ترددکنندگان')}`,
+      'پس از ثبت مکان وقوع، مشخصات افراد مرتبط با ملک را وارد کنید.'),
+    formSection('مشخصات خودرو و موتورسیکلت',
+      vehicleCollectionMarkup(),
+      'برای هر خودرو یا موتورسیکلت، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.'),
+    formSection('اقدامات حفاظتی ملک',
+      `${field('security','سیستم حفاظت و کنترل','textarea')}${field('specialSecurity','اقدامات حفاظتی و کنترل خاص','textarea')}`,
+      'وضعیت حفاظت و مراقبتی ملک را شرح دهید.'),
+    formSection('شرح و جزئیات وقوع',
       `${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
       'دلیل گزارش و نحوه اطلاع خود را ثبت کنید.')
   ];
@@ -1578,6 +1663,7 @@ function collectForm() {
   delete data.priority;
   delete data.weight;
   clearRetiredIncidentFields(data);
+  if (state.category === 'املاک') clearRetiredPropertyFields(data);
   if (document.querySelector('[data-person-contact-fields]')) delete data.phoneHome;
   document.querySelectorAll('#formBody [data-field], #incidentReportBody [data-field]').forEach(element => {
     const value = element.value.trim();
@@ -1588,6 +1674,12 @@ function collectForm() {
     const selected = row.querySelector('.selected');
     if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
     else delete data[row.dataset.choice];
+  });
+  document.querySelectorAll('#formBody [data-property-role-toggle]').forEach(checkbox => {
+    const name = checkbox.dataset.propertyRoleField;
+    if (!name) return;
+    if (checkbox.checked) data[name] = 'بله';
+    else delete data[name];
   });
   collectSocialLinks(data);
   collectVehiclePackages(data);
@@ -1617,15 +1709,23 @@ function continueForm() {
   collectForm();
   if (!validateVisibleFormFields()) return;
   if (!hasMeaningfulFormValue()) return alert('حداقل یکی از اطلاعات گزارش را وارد کنید.');
+  if (state.category === 'املاک') return openDocuments();
   openTime();
 }
 
 function backFromForm() {
   if (state.formStep > 0) return previousFormSection();
   collectForm();
+  if (state.category === 'املاک') return openTime();
   if (state.category === 'اشیاء') return showPage('objectTypePage');
   if (state.category === 'رویداد') return showPage('phenomenonTypePage');
   showPage('categoryPage');
+}
+
+function backFromTime() {
+  captureTimeDraft();
+  if (state.category === 'املاک') return openLocation();
+  showPage('formPage');
 }
 
 function openTime() {
@@ -1683,7 +1783,35 @@ function continueTime() {
     if (!approximate) return alert('زمان تقریبی را وارد کنید.');
     state.time.approximate = approximate;
   }
+  if (state.category === 'املاک') return openForm();
   openLocation();
+}
+
+function isPropertyReport() {
+  return state.category === 'املاک';
+}
+
+function allowedLocationModes() {
+  return isPropertyReport() ? ['current', 'map'] : ['current', 'map', 'unknown'];
+}
+
+function normalizeLocationForCategory() {
+  if (!isPropertyReport()) return;
+  if (state.location.mode === 'unknown') {
+    state.location = {};
+    return;
+  }
+  delete state.location.province;
+  delete state.location.city;
+}
+
+function setLocationModeAvailability() {
+  const hasUnknownMode = !isPropertyReport();
+  document.querySelectorAll('#locationPage [data-location-mode="unknown"]').forEach(button => {
+    button.hidden = !hasUnknownMode;
+    button.disabled = !hasUnknownMode;
+    button.setAttribute('aria-hidden', String(!hasUnknownMode));
+  });
 }
 
 function locationData() {
@@ -1712,7 +1840,7 @@ function renderLocationFields() {
   const box = document.getElementById('locationFields');
   if (!box) return;
   const mode = state.location.mode;
-  if (!['current', 'map', 'unknown'].includes(mode)) {
+  if (!allowedLocationModes().includes(mode)) {
     box.innerHTML = '<p class="location-mode-guidance">ابتدا یکی از روش‌های تعیین مکان وقوع را انتخاب کنید.</p>';
     return;
   }
@@ -1848,7 +1976,7 @@ function requestCurrentLocation() {
 }
 
 function selectLocationMode(mode) {
-  if (!['current', 'map', 'unknown'].includes(mode)) return;
+  if (!allowedLocationModes().includes(mode)) return;
   if (state.location.mode !== mode) {
     locationRequestSequence += 1;
     clearLocationMarker();
@@ -1873,7 +2001,9 @@ function selectLocationMode(mode) {
 }
 
 function openLocation() {
-  const mode = ['current', 'map', 'unknown'].includes(state.location.mode) ? state.location.mode : '';
+  normalizeLocationForCategory();
+  setLocationModeAvailability();
+  const mode = allowedLocationModes().includes(state.location.mode) ? state.location.mode : '';
   setLocationModeVisual(mode);
   renderLocationFields();
   const status = document.getElementById('locationStatus');
@@ -1893,8 +2023,9 @@ function openLocation() {
 
 function continueLocation() {
   captureLocationDraft();
+  normalizeLocationForCategory();
   const mode = state.location.mode;
-  if (!['current', 'map', 'unknown'].includes(mode)) return alert('روش تعیین مکان وقوع را انتخاب کنید.');
+  if (!allowedLocationModes().includes(mode)) return alert('روش تعیین مکان وقوع را انتخاب کنید.');
   if (mode === 'unknown') {
     if (!state.location.province) return alert('استان مکان وقوع را انتخاب کنید.');
     if (!state.location.city) return alert('شهرستان مکان وقوع را انتخاب کنید.');
@@ -1910,9 +2041,15 @@ function continueLocation() {
     delete state.location.city;
   }
   if (state.category === 'افراد') return openIncidentReport();
+  if (state.category === 'املاک') return openTime();
   openDocuments();
 }
 
+function backFromLocation() {
+  captureLocationDraft();
+  if (state.category === 'املاک') return showPage('categoryPage');
+  openTime();
+}
 
 function openIncidentReport() {
   renderIncidentReport();
@@ -1932,6 +2069,7 @@ function backFromIncidentReport() {
 
 function backFromDocuments() {
   if (state.category === 'افراد') return openIncidentReport();
+  if (state.category === 'املاک') return openForm();
   showPage('locationPage');
 }
 

@@ -426,6 +426,71 @@ html,body{background:var(--bg);color:var(--text)}
   transition:height .16s ease,border-color .18s ease,box-shadow .18s ease;
 }
 #formPage .choice-row--three{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* شناسه و ظاهر مالکین، ساکنین و ترددکنندگان در گزارش املاک */
+#formPage .property-person-group{
+  margin:0 0 14px;
+  padding:14px;
+  border:1px solid #dfe9e3;
+  border-radius:14px;
+  background:#fbfdfc;
+}
+#formPage .property-person-group:last-child{margin-bottom:0}
+#formPage .property-person-group-title{
+  margin:0 0 12px;
+  padding-bottom:8px;
+  border-bottom:1px solid #e1ebe5;
+  color:var(--green-dark);
+  font-size:14px;
+  font-weight:900;
+  line-height:1.55;
+}
+#formPage .property-person-basic-fields{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 10px;
+}
+#formPage .property-person-basic-fields .field-group{
+  min-width:0;
+}
+#formPage .property-person-role-toggles{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin:-2px 0 13px;
+}
+#formPage .property-person-role-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:7px;
+  min-height:42px;
+  padding:8px 10px;
+  border:1px solid #d9e5de;
+  border-radius:10px;
+  background:#fff;
+  color:#3d5448;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+#formPage .property-person-role-toggle input{
+  width:17px;
+  height:17px;
+  margin:0;
+  accent-color:var(--green);
+}
+#formPage .property-person-appearance-title{
+  margin:1px 0 10px;
+  color:#466154;
+  font-size:12px;
+  font-weight:900;
+}
+#formPage .property-person-appearance-fields .field-group:last-child{margin-bottom:0}
+@media(max-width:430px){
+  #formPage .property-person-group{padding:12px}
+  #formPage .property-person-basic-fields{gap:0 8px}
+  #formPage .property-person-role-toggles{grid-template-columns:1fr}
+}
 #formPage .social-links-field{
   margin-top:4px;
   padding:14px;
@@ -1176,7 +1241,7 @@ html,body{background:var(--bg);color:var(--text)}
 [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready i.done{
   background:#9bbda7;
 }
-/* مسیر پنج‌مرحله‌ای افراد عمداً آرام‌تر است تا تغییر هر مرحله خوانا بماند. */
+/* مسیرهای جزئی افراد و املاک عمداً آرام‌ترند تا تغییر هر مرحله خوانا بماند. */
 [data-report-roadmap].report-stepper--people span{
   transition-duration:.62s;
 }

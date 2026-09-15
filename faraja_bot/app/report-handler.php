@@ -127,7 +127,79 @@ function formHasMeaningfulValue(array $form): bool {
   return false;
 }
 
-function validateFormFields(array $form): void {
+function validatePropertyPersonFields(array $form): void {
+  $personPrefixes = [
+    'owner' => 'مالک',
+    'resident' => 'ساکن',
+    'visitor' => 'ترددکننده'
+  ];
+
+  foreach ($personPrefixes as $prefix => $role) {
+    $phone = formValue($form, $prefix . 'Phone');
+    if ($phone !== null && !preg_match('/^\d{11}$/', englishDigits($phone))) {
+      throw new InvalidArgumentException('شماره تماس ' . $role . ' باید دقیقاً ۱۱ رقم باشد.');
+    }
+
+    $height = formValue($form, $prefix . 'Height');
+    if ($height !== null) {
+      $digits = englishDigits($height);
+      if (!preg_match('/^\d{1,3}$/', $digits) || (int)$digits < 1 || (int)$digits > 250) {
+        throw new InvalidArgumentException('قد ' . $role . ' باید عددی تا ۳ رقم و حداکثر ۲۵۰ باشد.');
+      }
+    }
+
+    $gender = formValue($form, $prefix . 'Gender');
+    if ($gender !== null && !in_array($gender, ['مرد', 'زن', 'نامشخص'], true)) {
+      throw new InvalidArgumentException('جنسیت ' . $role . ' باید مرد، زن یا نامشخص باشد.');
+    }
+
+    $bodyBuild = formValue($form, $prefix . 'BodyBuild');
+    if ($bodyBuild !== null && !in_array($bodyBuild, ['لاغر', 'معمولی', 'چاق'], true)) {
+      throw new InvalidArgumentException('اندام ' . $role . ' نامعتبر است.');
+    }
+
+    foreach ([
+      'FirstName' => 'نام',
+      'LastName' => 'نام خانوادگی',
+      'Nickname' => 'شهرت',
+      'Face' => 'رنگ پوست',
+      'HairStatus' => 'وضعیت موی سر',
+      'HairColor' => 'رنگ مو',
+      'Beard' => 'محاسن'
+    ] as $suffix => $label) {
+      $value = formValue($form, $prefix . $suffix);
+      if ($value !== null && preg_match('/[0-9۰-۹٠-٩]/u', $value)) {
+        throw new InvalidArgumentException($label . ' ' . $role . ' فقط باید شامل متن باشد.');
+      }
+    }
+  }
+
+  foreach (['ownerIsResident' => 'ساکن هست', 'ownerIsVisitor' => 'تردد میکند'] as $key => $label) {
+    $value = formValue($form, $key);
+    if ($value !== null && $value !== 'بله') {
+      throw new InvalidArgumentException('وضعیت «' . $label . '» نامعتبر است.');
+    }
+  }
+}
+
+function normalizePropertyFields(array &$form): void {
+  // Fields from the retired, single-text property form must not survive drafts or
+  // manual submissions. Structured vehicle packages are retained for the new page.
+  unset($form['propertyAddress'], $form['owners'], $form['activity']);
+  if (array_key_exists('vehicles', $form) && !is_array($form['vehicles'])) unset($form['vehicles']);
+}
+
+function normalizePropertyLocation(array &$location): void {
+  $mode = isset($location['mode']) && is_scalar($location['mode']) ? trim((string)$location['mode']) : '';
+  if ($mode === 'unknown') {
+    throw new InvalidArgumentException('برای گزارش املاک، مکان وقوع را از طریق موقعیت فعلی یا نقشه تعیین کنید.');
+  }
+  // Province/county controls only belong to the unknown-location flow, which is
+  // intentionally unavailable for property reports.
+  unset($location['province'], $location['city']);
+}
+
+function validateFormFields(array $form, ?string $category = null): void {
   $nationalId = formValue($form, 'nationalId');
   if ($nationalId !== null && !validNationalId($nationalId)) {
     throw new InvalidArgumentException('کد ملی باید ۱۰ رقم معتبر باشد.');
@@ -177,6 +249,8 @@ function validateFormFields(array $form): void {
       throw new InvalidArgumentException($label . ' فقط باید شامل متن باشد.');
     }
   }
+
+  if ($category === 'املاک') validatePropertyPersonFields($form);
 }
 
 function normalize(array $input): array {
@@ -206,18 +280,22 @@ function normalize(array $input): array {
     $form['crimePlace'],
     $form['crimeDate']
   );
+  if ($category === 'املاک') normalizePropertyFields($form);
   normalizeSocialLinks($form);
   if (!formHasMeaningfulValue($form)) {
     throw new InvalidArgumentException('اطلاعات گزارش وارد نشده است.');
   }
-  validateFormFields($form);
+  validateFormFields($form, $category);
+
+  $location = is_array($input['location'] ?? null) ? $input['location'] : [];
+  if ($category === 'املاک') normalizePropertyLocation($location);
 
   $report = [
     'reportType' => 'گزارش',
     'category' => $category,
     'subtype' => clean($input['subtype'] ?? null),
     'form' => $form,
-    'location' => is_array($input['location'] ?? null) ? $input['location'] : [],
+    'location' => $location,
     'time' => is_array($input['time'] ?? null) ? $input['time'] : []
   ];
 
