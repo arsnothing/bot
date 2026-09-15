@@ -120,11 +120,11 @@ require __DIR__ . '/includes/header.php';
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('formPage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="1" data-people-step="1" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>زمان وقوع</h1></div>
+    <div class="page-head"><h1>تعیین زمان وقوع</h1></div>
     <div class="choice-row time-choices">
-      <button class="choice-btn button-with-icon" data-time="الان" onclick="setTimeMode(this,'الان')" type="button"><?= buttonIcon('clock-now') ?><span>الان</span></button>
-      <button class="choice-btn button-with-icon" data-time="دقیق" onclick="setTimeMode(this,'دقیق')" type="button"><?= buttonIcon('calendar-clock') ?><span>زمان دقیق</span></button>
-      <button class="choice-btn button-with-icon" data-time="تقریبی" onclick="setTimeMode(this,'تقریبی')" type="button"><?= buttonIcon('clock') ?><span>زمان تقریبی</span></button>
+      <button class="choice-btn button-with-icon" data-time="اکنون" onclick="setTimeMode(this,'اکنون')" type="button"><?= buttonIcon('clock-now') ?><span>اکنون</span></button>
+      <button class="choice-btn button-with-icon" data-time="دقیق" onclick="setTimeMode(this,'دقیق')" type="button"><?= buttonIcon('calendar-clock') ?><span>تعیین زمان دقیق</span></button>
+      <button class="choice-btn button-with-icon" data-time="تقریبی" onclick="setTimeMode(this,'تقریبی')" type="button"><?= buttonIcon('clock') ?><span>تعیین زمان تقریبی</span></button>
       <button class="choice-btn button-with-icon" data-time="نامشخص" onclick="setTimeMode(this,'نامشخص')" type="button"><?= buttonIcon('clock-off') ?><span>زمان را نمی‌دانم</span></button>
     </div>
     <div id="exactTime" class="conditional-fields" hidden>
@@ -136,7 +136,7 @@ require __DIR__ . '/includes/header.php';
       <div class="field-group"><label>ساعت</label><input id="timeClock" class="field-input numeric" inputmode="numeric" maxlength="۵" autocomplete="off"></div>
     </div>
     <div id="approxTime" class="conditional-fields" hidden>
-      <div class="field-group"><label>زمان تقریبی</label><input id="approxText" class="field-input" type="text"></div>
+      <div class="field-group"><label>تعیین زمان تقریبی</label><input id="approxText" class="field-input" type="text"></div>
     </div>
     <button class="primary-button page-action" onclick="continueTime()" type="button">تایید زمان وقوع</button>
   </main>
@@ -146,18 +146,14 @@ require __DIR__ . '/includes/header.php';
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('timePage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مکان</h1></div>
-    <div class="location-actions">
-      <button class="choice-btn location-choice" onclick="useCurrentLocation()" type="button"><?= buttonIcon('target', 'mini-svg') ?><span>موقعیت فعلی</span></button>
-      <button class="choice-btn location-choice" onclick="enableMapPick()" type="button"><?= buttonIcon('map', 'mini-svg') ?><span>انتخاب روی نقشه</span></button>
-      <button class="choice-btn location-choice" onclick="locationUnknown()" type="button"><?= buttonIcon('pin-off', 'mini-svg') ?><span>مکان را نمی‌دانم</span></button>
+    <div class="page-head"><h1>مکان وقوع</h1></div>
+    <div class="location-actions" role="group" aria-label="روش تعیین مکان وقوع">
+      <button class="choice-btn location-choice" data-location-mode="current" aria-pressed="false" onclick="selectLocationMode('current',this)" type="button"><?= buttonIcon('target', 'mini-svg') ?><span>موقعیت فعلی</span></button>
+      <button class="choice-btn location-choice" data-location-mode="map" aria-pressed="false" onclick="selectLocationMode('map',this)" type="button"><?= buttonIcon('map', 'mini-svg') ?><span>انتخاب روی نقشه</span></button>
+      <button class="choice-btn location-choice" data-location-mode="unknown" aria-pressed="false" onclick="selectLocationMode('unknown',this)" type="button"><?= buttonIcon('pin-off', 'mini-svg') ?><span>مکان را نمی‌دانم</span></button>
     </div>
     <div id="mapWrap" class="map-wrap"><div id="reportMap"></div></div>
-    <div class="location-fields">
-      <div class="field-group"><label>استان</label><input id="province" class="field-input" type="text"></div>
-      <div class="field-group"><label>شهر</label><input id="city" class="field-input" type="text"></div>
-      <div class="field-group"><label>آدرس</label><textarea id="address" class="field-textarea"></textarea></div>
-    </div>
+    <div id="locationFields" class="location-fields"></div>
     <div id="locationStatus" class="status" aria-live="polite"></div>
     <button class="primary-button page-action" onclick="continueLocation()" type="button">تایید مکان وقوع</button>
   </main>
@@ -177,14 +173,15 @@ require __DIR__ . '/includes/header.php';
   <main class="shell">
     <button class="back-button button-with-icon" onclick="backFromDocuments()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="4" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1 id="documentsPageTitle">تصویر گزارش</h1></div>
+    <div class="page-head"><h1 id="documentsPageTitle">مستندات گزارش</h1></div>
     <label class="document-upload" for="documentInput">
-      <?= buttonIcon('image-upload', 'button-icon upload-icon') ?>
-      <strong>افزودن تصویر</strong>
+      <?= buttonIcon('document-upload', 'button-icon upload-icon') ?>
+      <strong>بارگذاری مستندات</strong>
+      <span class="document-upload-help">یک یا چند فایل را انتخاب کنید</span>
     </label>
-    <input id="documentInput" type="file" accept="image/*" multiple hidden onchange="addDocuments(this)">
+    <input id="documentInput" type="file" multiple hidden onchange="addDocuments(this)">
     <div id="documentList" class="document-list"></div>
-    <button class="primary-button" onclick="sendReport()" type="button">تأیید و ثبت گزارش</button>
+    <button class="primary-button" onclick="sendReport()" type="button">تایید و ثبت نهایی</button>
     <div id="successBox" class="success-box" aria-live="polite"></div>
   </main>
 </section>

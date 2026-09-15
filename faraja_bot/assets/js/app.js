@@ -10,6 +10,7 @@ const state = {
 
 let reportMap = null;
 let marker = null;
+let locationRequestSequence = 0;
 
 const forms = {};
 
@@ -24,7 +25,7 @@ function canonicalCategory(category) {
   return CATEGORY_ALIASES[category] || category;
 }
 
-const STANDARD_REPORT_STEPS = Object.freeze(['فرم', 'زمان', 'مکان', 'تصویر']);
+const STANDARD_REPORT_STEPS = Object.freeze(['فرم', 'زمان', 'مکان', 'مستندات']);
 const PEOPLE_REPORT_STEPS = Object.freeze([
   'اطلاعات شناسایی',
   'زمان وقوع',
@@ -34,8 +35,8 @@ const PEOPLE_REPORT_STEPS = Object.freeze([
 ]);
 
 const DRAFT_STORAGE_KEY = 'faraja-report-draft-v1';
-const DRAFT_VERSION = 1;
-const REPORT_CATEGORIES = new Set(['افراد', 'املاک', 'اشیاء', 'رویداد', 'نهاد و سازمان']);
+const DRAFT_VERSION = 2;
+const REPORT_CATEGORIES = new Set(['افراد', 'املاک', 'اشیاء', 'رویداد']);
 const RESTORABLE_PAGE_IDS = new Set([
   'homePage',
   'locationRegistrationPage',
@@ -188,12 +189,18 @@ function captureTimeDraft() {
 }
 
 function captureLocationDraft() {
-  state.location = {
-    ...state.location,
-    province: readFieldValue('province').trim(),
-    city: readFieldValue('city').trim(),
-    address: readFieldValue('address').trim()
-  };
+  const location = { ...state.location };
+  const province = document.getElementById('province');
+  const city = document.getElementById('city');
+  const address = document.getElementById('address');
+
+  if (province && province.value.trim()) location.province = province.value.trim();
+  else delete location.province;
+  if (city && city.value.trim()) location.city = city.value.trim();
+  else delete location.city;
+  if (address && address.value.trim()) location.address = address.value.trim();
+  else delete location.address;
+  state.location = location;
 }
 
 function getDraftStorage() {
@@ -238,7 +245,7 @@ function persistReportDraft(pageId = activePageId()) {
   };
 
   try {
-    // تصویرهای انتخاب‌شده به‌علت محدودیت ظرفیت localStorage ذخیره نمی‌شوند.
+    // فایل‌های انتخاب‌شده به‌علت محدودیت ظرفیت localStorage ذخیره نمی‌شوند.
     storage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(snapshot));
   } catch (error) {
     // ذخیره‌سازی مرورگر ممکن است در حالت خصوصی یا فضای پرشده در دسترس نباشد.
@@ -343,7 +350,7 @@ function normalizeFieldValue(element) {
 }
 
 function resizeTextarea(textarea) {
-  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"]')) return;
+  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"], #locationPage textarea[data-auto-resize="true"]')) return;
   const maxHeight = 280;
   textarea.style.height = 'auto';
   const height = Math.min(Math.max(textarea.scrollHeight, 52), maxHeight);
@@ -353,7 +360,8 @@ function resizeTextarea(textarea) {
 
 function normalizeVisibleNumbers() {
   document.querySelectorAll('body *').forEach(el => {
-    if (el.children.length === 0 && el.textContent.trim()) {
+    const keepsLatin = typeof el.closest === 'function' && el.closest('[data-preserve-latin="true"]');
+    if (!keepsLatin && el.children.length === 0 && el.textContent.trim()) {
       el.textContent = faDigits(el.textContent);
     }
   });
@@ -370,7 +378,17 @@ document.addEventListener('input', event => {
     filterSocialPlatforms(target);
     return;
   }
+  if (target.matches('.searchable-select-search')) {
+    filterSearchableSelect(target);
+    return;
+  }
   if (target.matches('[data-social-link-value]')) {
+    persistReportDraft();
+    return;
+  }
+  if (target.matches('[data-vehicle-plate-input]')) {
+    normalizeVehiclePlateInput(target);
+    syncVehiclePlatePreview(target);
     persistReportDraft();
     return;
   }
@@ -383,12 +401,17 @@ document.addEventListener('input', event => {
 
 document.addEventListener('click', event => {
   const target = event.target;
-  if (!target || typeof target.closest !== 'function' || target.closest('[data-social-links]')) return;
+  if (!target || typeof target.closest !== 'function') return;
+  if (target.closest('[data-social-links], [data-searchable-select]')) return;
   closeSocialPlatformMenus();
+  closeSearchableSelects();
 });
 
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeSocialPlatformMenus();
+  if (event.key === 'Escape') {
+    closeSocialPlatformMenus();
+    closeSearchableSelects();
+  }
 });
 
 if (typeof window.addEventListener === 'function') {
@@ -420,7 +443,9 @@ function resetReport() {
   state.documents = [];
   timeDraft = null;
   hasSubmittedReport = false;
-  marker = null;
+  locationRequestSequence += 1;
+  clearLocationMarker();
+  if (reportMap && typeof reportMap.remove === 'function') reportMap.remove();
   reportMap = null;
 }
 
@@ -436,6 +461,7 @@ function openLocationRegistration() {
 
 function chooseCategory(category) {
   category = canonicalCategory(category);
+  if (!REPORT_CATEGORIES.has(category)) return showPage('categoryPage');
   state.category = category;
   state.subtype = '';
   state.form = {};
@@ -462,8 +488,9 @@ function field(name, label, type = 'text', options = {}) {
   const numericRule = options.numeric ? ' data-numeric="true"' : '';
   const textRule = options.textOnly ? ' data-text-only="true"' : '';
   const direction = options.ltr ? ' dir="ltr"' : '';
+  const preserveLatin = options.preserveLatin ? ' data-preserve-latin="true"' : '';
   const inputMode = options.numeric ? 'numeric' : type === 'email' ? 'email' : 'text';
-  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}${placeholder}${direction}`;
+  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}${placeholder}${direction}${preserveLatin}`;
 
   if (type === 'textarea') {
     return `<div class="field-group"><label>${label}</label><textarea class="field-textarea ${numeric} ${textOnly}" ${attributes} data-auto-resize="true"></textarea></div>`;
@@ -488,6 +515,332 @@ function escapeHtml(value) {
     '"': '&quot;',
     "'": '&#39;'
   })[character]);
+}
+
+const MAX_DOCUMENTS = 10;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+
+const VEHICLE_KIND_OPTIONS = Object.freeze([
+  { value: 'خودرو', label: 'خودرو', search: 'خودرو سواری وانت کامیون اتوبوس' },
+  { value: 'موتورسیکلت', label: 'موتورسیکلت', search: 'موتور موتور سیکلت' }
+]);
+
+const VEHICLE_PLATE_TEMPLATES = Object.freeze([
+  { id: 'private', label: 'پلاک شخصی', search: 'ملی شخصی سواری خودرو', layout: 'national', tone: 'light', sample: '۱۲ ب ۳۴۵ | ۶۷' },
+  { id: 'motorcycle', label: 'پلاک موتورسیکلت', search: 'موتور موتورسیکلت', layout: 'motorcycle', tone: 'light', sample: '۱۲۳ | ۴۵۶' },
+  { id: 'public', label: 'عمومی و تاکسی', search: 'عمومی تاکسی ع', layout: 'national', tone: 'yellow', fixedLetter: 'ع', sample: '۱۲ ع ۳۴۵ | ۶۷' },
+  { id: 'government', label: 'دولتی', search: 'دولتی الف', layout: 'national', tone: 'red', fixedLetter: 'الف', sample: '۱۲ الف ۳۴۵ | ۶۷' },
+  { id: 'police', label: 'نیروی انتظامی', search: 'پلیس انتظامی پ', layout: 'national', tone: 'green', fixedLetter: 'پ', sample: '۱۲ پ ۳۴۵ | ۶۷' },
+  { id: 'irgc', label: 'سپاه', search: 'سپاه ث', layout: 'national', tone: 'green', fixedLetter: 'ث', sample: '۱۲ ث ۳۴۵ | ۶۷' },
+  { id: 'army', label: 'ارتش', search: 'ارتش ش', layout: 'national', tone: 'khaki', fixedLetter: 'ش', sample: '۱۲ ش ۳۴۵ | ۶۷' },
+  { id: 'armed-forces', label: 'ستاد کل نیروهای مسلح', search: 'نیروهای مسلح ستاد کل ف', layout: 'national', tone: 'blue', fixedLetter: 'ف', sample: '۱۲ ف ۳۴۵ | ۶۷' },
+  { id: 'defense', label: 'وزارت دفاع', search: 'دفاع ز', layout: 'national', tone: 'blue', fixedLetter: 'ز', sample: '۱۲ ز ۳۴۵ | ۶۷' },
+  { id: 'temporary-persian', label: 'گذر موقت (گ)', search: 'گذر موقت گ', layout: 'national', tone: 'light', fixedLetter: 'گ', sample: '۱۲ گ ۳۴۵ | ۶۷' },
+  { id: 'temporary-latin', label: 'گذر موقت جدید (لاتین)', search: 'گذر موقت جدید انگلیسی لاتین temporary international', layout: 'latin', tone: 'light', sample: 'TEMPORARY 12A-34567' },
+  { id: 'diplomatic', label: 'دیپلماتیک (D)', search: 'دیپلماتیک سفارت انگلیسی D', layout: 'national', tone: 'blue', fixedLetter: 'D', preserveLetter: true, sample: '۱۲ D ۳۴۵ | ۶۷' },
+  { id: 'service', label: 'خدمات سفارت (S)', search: 'سرویس خدمت سفارت انگلیسی S', layout: 'national', tone: 'blue', fixedLetter: 'S', preserveLetter: true, sample: '۱۲ S ۳۴۵ | ۶۷' },
+  { id: 'protocol', label: 'تشریفات / PROTOCOL', search: 'تشریفات protocol', layout: 'protocol', tone: 'red', sample: 'PROTOCOL | ۱۲۳۴' },
+  { id: 'free-zone', label: 'منطقه آزاد', search: 'منطقه آزاد free zone', layout: 'national', tone: 'turquoise', sample: '۱۲ ب ۳۴۵ | ۶۷' },
+  { id: 'agricultural', label: 'ادوات کشاورزی', search: 'کشاورزی ک ماشین آلات', layout: 'national', tone: 'yellow', fixedLetter: 'ک', sample: '۱۲ ک ۳۴۵ | ۶۷' }
+]);
+
+function searchableSelectOptionMarkup(item, selectedValue = '') {
+  const value = String(item.value ?? item.id ?? '');
+  const label = String(item.label ?? item.name ?? value);
+  const search = String(item.search ?? `${label} ${value}`);
+  const preview = item.preview ? `<span class="searchable-select-option-preview">${item.preview}</span>` : '';
+  const detail = item.detail ? `<span class="searchable-select-option-detail">${escapeHtml(item.detail)}</span>` : '';
+  const selected = value === String(selectedValue ?? '');
+  return `<button type="button" class="searchable-select-option${item.optionClass ? ` ${item.optionClass}` : ''}" role="option" data-searchable-select-option data-value="${escapeHtml(value)}" data-search="${escapeHtml(search)}" aria-selected="${selected ? 'true' : 'false'}" onclick="selectSearchableSelectOption(this)">${preview}<span class="searchable-select-option-copy"><span class="searchable-select-option-name">${escapeHtml(label)}</span>${detail}</span></button>`;
+}
+
+function searchableSelectMarkup(name, label, items, options = {}) {
+  const value = String(options.value ?? '');
+  const selected = items.find(item => String(item.value ?? item.id ?? '') === value);
+  const selectedLabel = selected ? String(selected.label ?? selected.name ?? selected.value ?? selected.id) : (options.placeholder || 'انتخاب کنید');
+  const inputId = options.inputId ? ` id="${escapeHtml(options.inputId)}"` : '';
+  const fieldName = options.fieldName ? ` data-field="${escapeHtml(options.fieldName)}" data-label="${escapeHtml(label)}"` : '';
+  const isDisabled = Boolean(options.disabled);
+  const disabled = isDisabled ? ' disabled' : '';
+  const menuId = `searchable-select-menu-${name}`;
+  const rootClass = `${options.wrap === false ? '' : 'field-group '}searchable-select-field${options.className ? ` ${options.className}` : ''}`;
+  const labelMarkup = label ? `<label>${escapeHtml(label)}</label>` : '';
+
+  return `<div class="${rootClass}" data-searchable-select data-select-name="${escapeHtml(name)}" data-placeholder="${escapeHtml(options.placeholder || 'انتخاب کنید')}">
+    ${labelMarkup}
+    <input type="hidden"${inputId} data-searchable-select-value${fieldName} value="${escapeHtml(value)}">
+    <button type="button" class="searchable-select-trigger button-with-icon" aria-haspopup="listbox" aria-controls="${menuId}" aria-expanded="false" onclick="toggleSearchableSelect(this)"${disabled}><span class="searchable-select-trigger-copy" data-searchable-select-label>${escapeHtml(selectedLabel)}</span>${iconMarkup('chevron-down', 'searchable-select-chevron')}</button>
+    <div id="${menuId}" class="searchable-select-menu" role="dialog" aria-label="${escapeHtml(label || 'انتخاب گزینه')}">
+      <div class="searchable-select-search-wrap">
+        ${iconMarkup('search', 'searchable-select-search-icon')}
+        <input type="search" class="searchable-select-search" autocomplete="off" placeholder="جست‌وجو" aria-label="جست‌وجو در گزینه‌ها">
+      </div>
+      <div class="searchable-select-options" role="listbox" aria-label="${escapeHtml(label || 'گزینه‌ها')}">${items.map(item => searchableSelectOptionMarkup(item, value)).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function searchableSelectValue(component) {
+  const input = component && component.querySelector('[data-searchable-select-value]');
+  return input ? input.value : '';
+}
+
+function searchableSelectOptionForValue(component, value) {
+  return Array.from(component ? component.querySelectorAll('[data-searchable-select-option]') : [])
+    .find(option => option.dataset.value === String(value ?? '')) || null;
+}
+
+function updateSearchableSelectPresentation(component) {
+  if (!component) return;
+  const input = component.querySelector('[data-searchable-select-value]');
+  const trigger = component.querySelector('.searchable-select-trigger');
+  const label = component.querySelector('[data-searchable-select-label]');
+  const value = input ? input.value : '';
+  const selected = searchableSelectOptionForValue(component, value);
+  const selectedLabel = selected ? selected.querySelector('.searchable-select-option-name') : null;
+  if (label) label.textContent = selectedLabel ? selectedLabel.textContent : (component.dataset.placeholder || 'انتخاب کنید');
+  component.classList.toggle('has-value', Boolean(selected));
+  component.querySelectorAll('[data-searchable-select-option]').forEach(option => {
+    const isSelected = option === selected;
+    option.classList.toggle('selected', isSelected);
+    option.setAttribute('aria-selected', String(isSelected));
+  });
+  if (trigger && trigger.disabled) component.classList.add('is-disabled');
+  else component.classList.remove('is-disabled');
+}
+
+function closeSearchableSelects(except = null) {
+  document.querySelectorAll('[data-searchable-select].is-picker-open').forEach(component => {
+    if (component === except) return;
+    component.classList.remove('is-picker-open');
+    const trigger = component.querySelector('.searchable-select-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function toggleSearchableSelect(trigger) {
+  const component = trigger.closest('[data-searchable-select]');
+  if (!component || trigger.disabled) return;
+  const shouldOpen = !component.classList.contains('is-picker-open');
+  closeSearchableSelects(component);
+  closeSocialPlatformMenus();
+  component.classList.toggle('is-picker-open', shouldOpen);
+  trigger.setAttribute('aria-expanded', String(shouldOpen));
+  if (!shouldOpen) return;
+  const search = component.querySelector('.searchable-select-search');
+  if (search) {
+    search.value = '';
+    filterSearchableSelect(search);
+    setTimeout(() => search.focus(), 0);
+  }
+}
+
+function filterSearchableSelect(searchInput) {
+  const component = searchInput.closest('[data-searchable-select]');
+  if (!component) return;
+  const query = normalizedSocialSearch(searchInput.value);
+  component.querySelectorAll('[data-searchable-select-option]').forEach(option => {
+    option.hidden = Boolean(query) && !normalizedSocialSearch(option.dataset.search).includes(query);
+  });
+}
+
+function setSearchableSelectItems(component, items, options = {}) {
+  if (!component) return;
+  const input = component.querySelector('[data-searchable-select-value]');
+  const optionsBox = component.querySelector('.searchable-select-options');
+  if (!input || !optionsBox) return;
+  const nextValue = options.value === undefined ? input.value : String(options.value ?? '');
+  input.value = nextValue;
+  optionsBox.innerHTML = items.map(item => searchableSelectOptionMarkup(item, nextValue)).join('');
+  const trigger = component.querySelector('.searchable-select-trigger');
+  if (trigger && options.disabled !== undefined) trigger.disabled = Boolean(options.disabled);
+  if (options.placeholder) component.dataset.placeholder = options.placeholder;
+  updateSearchableSelectPresentation(component);
+}
+
+function selectSearchableSelectOption(option) {
+  const component = option.closest('[data-searchable-select]');
+  const input = component && component.querySelector('[data-searchable-select-value]');
+  if (!component || !input) return;
+  input.value = option.dataset.value || '';
+  updateSearchableSelectPresentation(component);
+  closeSearchableSelects();
+  handleSearchableSelectChange(component);
+  persistReportDraft();
+}
+
+function handleSearchableSelectChange(component) {
+  const name = component.dataset.selectName;
+  if (name === 'locationProvince') {
+    const province = searchableSelectValue(component);
+    state.location.province = province;
+    state.location.city = '';
+    updateLocationCountyPicker(province);
+  }
+  if (name === 'vehiclePlateTemplate') {
+    const field = component.closest('[data-vehicle-plate-field]');
+    if (field) renderVehiclePlateEditor(field, searchableSelectValue(component));
+  }
+}
+
+function setSearchableSelectDisabled(component, disabled, placeholder = 'انتخاب کنید') {
+  if (!component) return;
+  const trigger = component.querySelector('.searchable-select-trigger');
+  if (trigger) trigger.disabled = Boolean(disabled);
+  component.dataset.placeholder = placeholder;
+  if (disabled) {
+    component.classList.remove('is-picker-open');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  }
+  updateSearchableSelectPresentation(component);
+}
+
+function vehiclePlateTemplateFor(templateId) {
+  return VEHICLE_PLATE_TEMPLATES.find(template => template.id === templateId) || null;
+}
+
+function vehiclePlatePreviewMarkup(template, parts = {}, isOption = false) {
+  const slot = (name, fallback, preserveLatin = false) => {
+    const value = typeof parts[name] === 'string' && parts[name] ? parts[name] : fallback;
+    return `<span data-plate-preview-part="${name}" data-default-value="${escapeHtml(fallback)}"${preserveLatin ? ' data-preserve-latin="true" dir="ltr"' : ''}>${escapeHtml(value)}</span>`;
+  };
+  const className = `vehicle-plate-preview vehicle-plate-preview--${template.tone}${isOption ? ' vehicle-plate-preview--sample' : ''}`;
+  if (template.layout === 'latin') {
+    return `<span class="${className}" data-preserve-latin="true" dir="ltr"><small>TEMPORARY</small>${slot('latin', '12A-34567', true)}</span>`;
+  }
+  if (template.layout === 'motorcycle') {
+    return `<span class="${className}">${slot('first', '۱۲۳')}${slot('second', '۴۵۶')}<small>IRAN</small></span>`;
+  }
+  if (template.layout === 'protocol') {
+    return `<span class="${className}" data-preserve-latin="true"><small>PROTOCOL</small>${slot('number', '۱۲۳۴')}</span>`;
+  }
+  const letter = template.fixedLetter
+    ? `<span${template.preserveLetter ? ' data-preserve-latin="true" dir="ltr"' : ''}>${escapeHtml(template.fixedLetter)}</span>`
+    : slot('letter', 'ب');
+  return `<span class="${className}">${slot('right', '۱۲')}${letter}${slot('left', '۳۴۵')}<small>${slot('region', '۶۷')}</small></span>`;
+}
+
+function vehiclePlateInputMarkup(part, label, options = {}, value = '') {
+  const numeric = options.numeric ? ' data-numeric="true"' : '';
+  const textOnly = options.textOnly ? ' data-text-only="true"' : '';
+  const latin = options.latin ? ' data-preserve-latin="true" dir="ltr" autocapitalize="characters" spellcheck="false"' : '';
+  const maxLength = options.maxLength ? ` maxlength="${options.maxLength}"` : '';
+  const inputMode = options.numeric ? 'numeric' : 'text';
+  return `<label class="vehicle-plate-input-wrap"><span>${label}</span><input type="text" class="field-input vehicle-plate-input${options.numeric ? ' numeric' : ''}" data-vehicle-plate-input data-plate-part="${part}"${numeric}${textOnly}${latin}${maxLength} inputmode="${inputMode}" autocomplete="off" value="${escapeHtml(value)}"></label>`;
+}
+
+function vehiclePlateEditorMarkup(templateId, savedParts = {}) {
+  const template = vehiclePlateTemplateFor(templateId);
+  if (!template) {
+    return `<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>قالب پلاک را انتخاب کنید یا گزینه «فاقد پلاک» را علامت بزنید.</p></div>`;
+  }
+
+  let inputs = '';
+  if (template.layout === 'national') {
+    inputs = `${vehiclePlateInputMarkup('right', 'دو رقم سمت راست', { numeric: true, maxLength: 2 }, savedParts.right || '')}${template.fixedLetter ? '' : vehiclePlateInputMarkup('letter', 'حرف پلاک', { textOnly: true, maxLength: 1 }, savedParts.letter || '')}${vehiclePlateInputMarkup('left', 'سه رقم', { numeric: true, maxLength: 3 }, savedParts.left || '')}${vehiclePlateInputMarkup('region', 'کد دو رقمی', { numeric: true, maxLength: 2 }, savedParts.region || '')}`;
+  } else if (template.layout === 'motorcycle') {
+    inputs = `${vehiclePlateInputMarkup('first', 'سه رقم اول', { numeric: true, maxLength: 3 }, savedParts.first || '')}${vehiclePlateInputMarkup('second', 'سه رقم دوم', { numeric: true, maxLength: 3 }, savedParts.second || '')}`;
+  } else if (template.layout === 'latin') {
+    inputs = vehiclePlateInputMarkup('latin', 'شماره لاتین پلاک', { latin: true, maxLength: 16 }, savedParts.latin || '');
+  } else {
+    inputs = vehiclePlateInputMarkup('number', 'شماره پلاک', { numeric: true, maxLength: 5 }, savedParts.number || '');
+  }
+
+  return `<div class="vehicle-plate-editor" data-vehicle-plate-editor data-plate-template="${template.id}">
+    <div class="vehicle-plate-preview-wrap" aria-label="نمایش قالب انتخاب‌شده">${vehiclePlatePreviewMarkup(template, savedParts)}</div>
+    <div class="vehicle-plate-inputs vehicle-plate-inputs--${template.layout}">${inputs}</div>
+    <p class="vehicle-plate-hint">${template.layout === 'latin' ? 'شماره یا حروف لاتین دیده‌شده روی پلاک را وارد کنید.' : 'بخش‌های قابل مشاهده پلاک را وارد کنید؛ تکمیل همه بخش‌ها الزامی نیست.'}</p>
+  </div>`;
+}
+
+function vehiclePlateField() {
+  const saved = isPlainRecord(state.form.vehiclePlate) ? state.form.vehiclePlate : {};
+  const template = vehiclePlateTemplateFor(saved.template);
+  const noPlate = state.form.vehicleNoPlate === 'بله';
+  const options = VEHICLE_PLATE_TEMPLATES.map(item => ({
+    ...item,
+    value: item.id,
+    preview: vehiclePlatePreviewMarkup(item, {}, true)
+  }));
+  return `<div class="field-group vehicle-plate-field${noPlate ? ' is-no-plate' : ''}" data-vehicle-plate-field>
+    <label>پلاک</label>
+    <p class="vehicle-plate-description">قالب نزدیک به پلاک دیده‌شده را انتخاب کنید.</p>
+    ${searchableSelectMarkup('vehiclePlateTemplate', '', options, { value: template ? template.id : '', placeholder: 'انتخاب قالب پلاک', wrap: false, className: 'vehicle-plate-template-select', disabled: noPlate })}
+    <label class="vehicle-no-plate"><input type="checkbox" data-vehicle-no-plate onchange="toggleVehicleNoPlate(this)"${noPlate ? ' checked' : ''}><span>فاقد پلاک</span></label>
+    <div data-vehicle-plate-editor-container>${noPlate ? '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>برای این وسیله نقلیه، پلاکی مشاهده نشده است.</p></div>' : vehiclePlateEditorMarkup(template ? template.id : '', saved.parts || {})}</div>
+  </div>`;
+}
+
+function renderVehiclePlateEditor(field, templateId) {
+  const container = field && field.querySelector('[data-vehicle-plate-editor-container]');
+  if (!container) return;
+  container.innerHTML = vehiclePlateEditorMarkup(templateId);
+}
+
+function toggleVehicleNoPlate(checkbox) {
+  const field = checkbox.closest('[data-vehicle-plate-field]');
+  if (!field) return;
+  const component = field.querySelector('[data-searchable-select]');
+  field.classList.toggle('is-no-plate', checkbox.checked);
+  if (checkbox.checked) {
+    const input = component && component.querySelector('[data-searchable-select-value]');
+    if (input) input.value = '';
+    setSearchableSelectDisabled(component, true, 'فاقد پلاک');
+    const container = field.querySelector('[data-vehicle-plate-editor-container]');
+    if (container) container.innerHTML = '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>برای این وسیله نقلیه، پلاکی مشاهده نشده است.</p></div>';
+  } else {
+    setSearchableSelectDisabled(component, false, 'انتخاب قالب پلاک');
+  }
+  persistReportDraft();
+}
+
+function normalizeVehiclePlateInput(input) {
+  normalizeFieldValue(input);
+  if (input.dataset.preserveLatin === 'true') {
+    input.value = enDigits(input.value).toUpperCase().replace(/[^A-Z0-9 -]/g, '');
+  }
+  if (input.dataset.platePart === 'letter') {
+    input.value = input.value.replace(/[^آ-یءئ]/g, '').slice(0, 1);
+  }
+}
+
+function syncVehiclePlatePreview(input) {
+  const editor = input.closest('[data-vehicle-plate-editor]');
+  if (!editor) return;
+  const preview = editor.querySelector(`[data-plate-preview-part="${input.dataset.platePart}"]`);
+  if (!preview) return;
+  const fallback = preview.dataset.defaultValue || preview.textContent;
+  preview.textContent = input.value || fallback;
+}
+
+function collectVehiclePlate(data) {
+  const field = document.querySelector('[data-vehicle-plate-field]');
+  // Only the active sequential form section is in the DOM. Keep a saved vehicle
+  // record while the reporter is on an earlier section, time, or location page.
+  if (!field) return;
+
+  const noPlate = field.querySelector('[data-vehicle-no-plate]');
+  if (noPlate && noPlate.checked) {
+    data.vehicleNoPlate = 'بله';
+    delete data.vehiclePlate;
+    return;
+  }
+
+  delete data.vehicleNoPlate;
+  const component = field.querySelector('[data-searchable-select]');
+  const template = vehiclePlateTemplateFor(searchableSelectValue(component));
+  if (!template) {
+    delete data.vehiclePlate;
+    return;
+  }
+
+  const parts = {};
+  field.querySelectorAll('[data-vehicle-plate-input]').forEach(input => {
+    const value = input.value.trim();
+    if (value) parts[input.dataset.platePart] = value;
+  });
+  if (template.fixedLetter) parts.letter = template.fixedLetter;
+  data.vehiclePlate = { template: template.id, label: template.label, parts };
 }
 
 function socialPlatformFor(platformId) {
@@ -693,6 +1046,7 @@ function hasMeaningfulFormValue() {
     if (name === 'socialLinks' && Array.isArray(value)) {
       return value.some(link => isPlainRecord(link) && typeof link.value === 'string' && link.value.trim());
     }
+    if (name === 'vehiclePlate' && isPlainRecord(value)) return Boolean(value.template);
     return typeof value === 'string' && value.trim();
   });
 }
@@ -748,6 +1102,7 @@ function formSection(title, fields, description) {
 function openForm() {
   const title = state.subtype ? `${state.category} — ${state.subtype}` : state.category;
   const sections = buildForm(state.category, state.subtype);
+  if (!sections.length) return showPage('categoryPage');
   state.formStep = Math.min(Math.max(Number(state.formStep) || 0, 0), sections.length - 1);
   document.getElementById('formTitle').textContent = title;
   renderFormSection(sections);
@@ -792,7 +1147,7 @@ function buildForm(category, subtype) {
   if (category === 'املاک') return propertyForm();
   if (category === 'اشیاء') return objectForm(subtype);
   if (category === 'رویداد') return phenomenonForm(subtype);
-  return orgForm();
+  return [];
 }
 
 function personForm() {
@@ -805,7 +1160,10 @@ function personForm() {
       'ویژگی‌های ظاهری قابل مشاهده را ثبت کنید.'),
     formSection('پل‌های ارتباطی',
       `${field('phoneMobile','شماره همراه','text',{numeric:true,maxLength:11,validation:'phone'})}${field('phoneFixed','شماره ثابت محل سکونت','text',{numeric:true,maxLength:11,validation:'phone'})}${field('homeAddress','نشانی محل سکونت','textarea')}${field('phoneWork','شماره ثابت محل کار','text',{numeric:true,maxLength:11,validation:'phone'})}${field('workAddress','نشانی محل کار','textarea')}${field('email','نشانی پست الکترونیک','email',{validation:'email',placeholder:'example@gmail.com',ltr:true})}${socialLinksField()}`,
-      'شماره‌های تماس و نشانی‌های مرتبط را وارد کنید.')
+      'شماره‌های تماس و نشانی‌های مرتبط را وارد کنید.'),
+    formSection('وسایل نقلیه',
+      `${searchableSelectMarkup('vehicleKind','نوع وسیله نقلیه',VEHICLE_KIND_OPTIONS,{fieldName:'vehicleKind',value:typeof state.form.vehicleKind === 'string' ? state.form.vehicleKind : '',placeholder:'خودرو یا موتورسیکلت را انتخاب کنید'})}${field('vehicleType','نوع')}${field('vehicleColor','رنگ')}${vehiclePlateField()}${field('vehicleSpecialFeature','ویژگی خاص','textarea',{placeholder:'تصادف، خوردگی رنگ و موارد بارز دیگر'})}`,
+      'نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده وسیله نقلیه را ثبت کنید.')
   ];
 }
 
@@ -918,20 +1276,6 @@ function phenomenonForm(subtype) {
   ];
 }
 
-function orgForm() {
-  return [
-    formSection('مشخصات نهاد یا سازمان',
-      `${field('orgName','نام نهاد یا سازمان')}${choices('orgType','نوع نهاد یا سازمان',['دولتی','خصوصی','نظامی','انتظامی','عمومی','غیردولتی','نامشخص'])}${field('orgAddress','محل و آدرس','textarea')}`,
-      'نام، نوع و نشانی نهاد یا سازمان را وارد کنید.'),
-    formSection('فعالیت و افراد مرتبط',
-      `${field('orgActivity','حوزه و نوع فعالیت','textarea')}${field('orgManager','مسئول یا مدیر مرتبط')}${field('orgPeople','افراد مرتبط','textarea')}`,
-      'حوزه فعالیت و افراد مرتبط را ثبت کنید.'),
-    formSection('موضوع و منبع گزارش',
-      `${field('orgReason','موضوع و علت گزارش','textarea')}${field('orgActions','اقدامات یا نحوه وقوع','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
-      'موضوع گزارش و نحوه اطلاع خود را شرح دهید.')
-  ];
-}
-
 function nextFormSection() {
   const sections = buildForm(state.category, state.subtype);
   if (state.formStep >= sections.length - 1) return continueForm();
@@ -976,6 +1320,7 @@ function collectForm() {
     else delete data[row.dataset.choice];
   });
   collectSocialLinks(data);
+  collectVehiclePlate(data);
   state.form = data;
 }
 
@@ -994,6 +1339,7 @@ function restoreFormValues() {
       });
     }
   });
+  document.querySelectorAll('#formBody [data-searchable-select], #incidentReportBody [data-searchable-select]').forEach(updateSearchableSelectPresentation);
   document.querySelectorAll('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"]').forEach(resizeTextarea);
 }
 
@@ -1019,7 +1365,8 @@ function openTime() {
 
 function restoreTimeFields() {
   document.querySelectorAll('#timePage .choice-btn').forEach(button => button.classList.remove('selected'));
-  const mode = state.time.mode;
+  const mode = state.time.mode === 'الان' ? 'اکنون' : state.time.mode;
+  if (state.time.mode === 'الان') state.time.mode = mode;
   if (mode) {
     const selected = document.querySelector(`#timePage .choice-btn[data-time="${CSS.escape(mode)}"]`);
     if (selected) selected.classList.add('selected');
@@ -1040,7 +1387,7 @@ function setTimeMode(button, mode) {
   document.querySelectorAll('#timePage .choice-btn').forEach(item => item.classList.remove('selected'));
   button.classList.add('selected');
   state.time = { mode };
-  if (mode === 'الان') state.time.selectedAt = new Date().toISOString();
+  if (mode === 'اکنون') state.time.selectedAt = new Date().toISOString();
   document.getElementById('exactTime').hidden = mode !== 'دقیق';
   document.getElementById('approxTime').hidden = mode !== 'تقریبی';
   persistReportDraft();
@@ -1069,79 +1416,233 @@ function continueTime() {
   openLocation();
 }
 
-function openLocation() {
-  document.getElementById('province').value = state.location.province || '';
-  document.getElementById('city').value = state.location.city || '';
-  document.getElementById('address').value = state.location.address || '';
-  document.getElementById('locationStatus').textContent = '';
-  showPage('locationPage');
+function locationData() {
+  const data = typeof window !== 'undefined' ? window.IRAN_COUNTIES_BY_PROVINCE : null;
+  return isPlainRecord(data) ? data : {};
+}
+
+function locationProvinceItems() {
+  return Object.keys(locationData()).map(name => ({ value: name, label: name, search: name }));
+}
+
+function locationCountyItems(province) {
+  const counties = locationData()[province];
+  return Array.isArray(counties) ? counties.map(name => ({ value: name, label: name, search: name })) : [];
+}
+
+function setLocationModeVisual(mode) {
+  document.querySelectorAll('#locationPage [data-location-mode]').forEach(button => {
+    const selected = button.dataset.locationMode === mode;
+    button.classList.toggle('selected', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+function renderLocationFields() {
+  const box = document.getElementById('locationFields');
+  if (!box) return;
+  const mode = state.location.mode;
+  if (!['current', 'map', 'unknown'].includes(mode)) {
+    box.innerHTML = '<p class="location-mode-guidance">ابتدا یکی از روش‌های تعیین مکان وقوع را انتخاب کنید.</p>';
+    return;
+  }
+
+  const unknown = mode === 'unknown';
+  const province = unknown ? state.location.province || '' : '';
+  const city = unknown ? state.location.city || '' : '';
+  const counties = locationCountyItems(province);
+  const addressLabel = unknown ? 'آدرس' : 'جزئیات مکان وقوع';
+  const regionFields = unknown ? `<div class="location-region-fields">
+    ${searchableSelectMarkup('locationProvince', 'استان مکان وقوع', locationProvinceItems(), { inputId: 'province', value: province, placeholder: 'استان را انتخاب کنید' })}
+    ${searchableSelectMarkup('locationCounty', 'شهرستان مکان وقوع', counties, { inputId: 'city', value: city, placeholder: province ? 'شهرستان را انتخاب کنید' : 'ابتدا استان را انتخاب کنید', disabled: !province })}
+  </div>` : '';
+
+  box.innerHTML = `${regionFields}
+    <div class="field-group location-address-field">
+      <label for="address">${addressLabel}</label>
+      <textarea id="address" class="field-textarea" data-auto-resize="true" placeholder="شامل کدپستی، پلاک، طبقه و واحد و ...">${escapeHtml(state.location.address || '')}</textarea>
+    </div>`;
+  box.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
+  const address = document.getElementById('address');
+  if (address) resizeTextarea(address);
+}
+
+function updateLocationCountyPicker(province) {
+  const component = document.querySelector('#locationFields [data-select-name="locationCounty"]');
+  if (!component) return;
+  const counties = locationCountyItems(province);
+  setSearchableSelectItems(component, counties, {
+    value: '',
+    disabled: !province,
+    placeholder: province ? 'شهرستان را انتخاب کنید' : 'ابتدا استان را انتخاب کنید'
+  });
+}
+
+function clearLocationMarker() {
+  if (marker && reportMap && typeof reportMap.removeLayer === 'function') reportMap.removeLayer(marker);
+  marker = null;
+}
+
+function hideReportMap() {
+  const wrap = document.getElementById('mapWrap');
+  if (wrap) wrap.classList.remove('visible');
 }
 
 function initMap() {
-  if (reportMap) return;
-  reportMap = L.map('reportMap', { zoomControl: true, attributionControl: true }).setView([35.6892, 51.3890], 6);
+  if (reportMap) return true;
+  if (typeof L === 'undefined') return false;
+  const mapElement = document.getElementById('reportMap');
+  if (!mapElement) return false;
+  reportMap = L.map(mapElement, { zoomControl: true, attributionControl: true }).setView([35.6892, 51.3890], 6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(reportMap);
   reportMap.on('click', event => setMapPoint(event.latlng.lat, event.latlng.lng));
+  return true;
 }
 
-function enableMapPick() {
-  initMap();
-  document.getElementById('mapWrap').classList.add('visible');
-  document.getElementById('locationStatus').textContent = '';
-  setTimeout(() => reportMap.invalidateSize(), 100);
+function showReportMap() {
+  const wrap = document.getElementById('mapWrap');
+  const status = document.getElementById('locationStatus');
+  if (!initMap()) {
+    if (status) status.textContent = 'نمایش نقشه در این مرورگر در دسترس نیست.';
+    return false;
+  }
+  if (wrap) wrap.classList.add('visible');
+  setTimeout(() => {
+    if (reportMap && typeof reportMap.invalidateSize === 'function') reportMap.invalidateSize();
+  }, 100);
+  return true;
+}
+
+function restoreLocationMarker() {
+  const latitude = Number(state.location.latitude);
+  const longitude = Number(state.location.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !reportMap || typeof L === 'undefined') return;
+  if (marker) marker.setLatLng([latitude, longitude]);
+  else {
+    marker = L.marker([latitude, longitude], { draggable: true }).addTo(reportMap);
+    marker.on('dragend', event => {
+      if (!['current', 'map'].includes(state.location.mode)) return;
+      const point = event.target.getLatLng();
+      state.location.latitude = point.lat;
+      state.location.longitude = point.lng;
+      persistReportDraft();
+    });
+  }
+  reportMap.setView([latitude, longitude], Math.max(reportMap.getZoom ? reportMap.getZoom() : 6, 13));
 }
 
 function setMapPoint(lat, lng) {
-  initMap();
-  if (marker) marker.setLatLng([lat, lng]);
-  else marker = L.marker([lat, lng], { draggable: true }).addTo(reportMap);
-  marker.on('dragend', event => {
-    const point = event.target.getLatLng();
-    state.location.latitude = point.lat;
-    state.location.longitude = point.lng;
-    persistReportDraft();
-  });
-  state.location.latitude = lat;
-  state.location.longitude = lng;
+  if (!['current', 'map'].includes(state.location.mode) || !initMap()) return;
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+  if (marker) marker.setLatLng([latitude, longitude]);
+  else {
+    marker = L.marker([latitude, longitude], { draggable: true }).addTo(reportMap);
+    marker.on('dragend', event => {
+      if (!['current', 'map'].includes(state.location.mode)) return;
+      const point = event.target.getLatLng();
+      state.location.latitude = point.lat;
+      state.location.longitude = point.lng;
+      persistReportDraft();
+    });
+  }
+  state.location.latitude = latitude;
+  state.location.longitude = longitude;
   state.location.known = true;
-  document.getElementById('locationStatus').textContent = 'موقعیت انتخاب شد';
+  const status = document.getElementById('locationStatus');
+  if (status) status.textContent = state.location.mode === 'current' ? 'موقعیت فعلی ثبت شد.' : 'موقعیت انتخاب شد.';
   persistReportDraft();
 }
 
-function useCurrentLocation() {
-  if (!navigator.geolocation) {
-    document.getElementById('locationStatus').textContent = 'موقعیت فعلی در دسترس نیست';
+function requestCurrentLocation() {
+  const status = document.getElementById('locationStatus');
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    if (status) status.textContent = 'دسترسی به موقعیت فعلی در این مرورگر ممکن نیست؛ می‌توانید «انتخاب روی نقشه» را انتخاب کنید.';
     return;
   }
+  const requestId = ++locationRequestSequence;
+  if (status) status.textContent = 'در حال دریافت موقعیت فعلی؛ در صورت درخواست مرورگر، دسترسی GPS را تأیید کنید.';
   navigator.geolocation.getCurrentPosition(
     position => {
+      if (state.location.mode !== 'current' || requestId !== locationRequestSequence) return;
       setMapPoint(position.coords.latitude, position.coords.longitude);
-      enableMapPick();
-      reportMap.setView([position.coords.latitude, position.coords.longitude], 15);
+      if (reportMap && typeof reportMap.setView === 'function') reportMap.setView([position.coords.latitude, position.coords.longitude], 15);
     },
     () => {
-      document.getElementById('locationStatus').textContent = 'دسترسی به موقعیت فعلی ممکن نیست';
+      if (state.location.mode !== 'current' || requestId !== locationRequestSequence) return;
+      if (status) status.textContent = 'دسترسی به موقعیت فعلی ممکن نشد؛ می‌توانید «انتخاب روی نقشه» را انتخاب کنید.';
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
-function locationUnknown() {
-  state.location.known = false;
-  delete state.location.latitude;
-  delete state.location.longitude;
-  document.getElementById('locationStatus').textContent = '';
+function selectLocationMode(mode) {
+  if (!['current', 'map', 'unknown'].includes(mode)) return;
+  if (state.location.mode !== mode) {
+    locationRequestSequence += 1;
+    clearLocationMarker();
+    state.location = { mode };
+  }
+
+  setLocationModeVisual(mode);
+  renderLocationFields();
+  const status = document.getElementById('locationStatus');
+  if (mode === 'unknown') {
+    hideReportMap();
+    if (status) status.textContent = '';
+  } else {
+    showReportMap();
+    restoreLocationMarker();
+    if (mode === 'map' && status && !Number.isFinite(Number(state.location.latitude))) {
+      status.textContent = 'نقطه مکان وقوع را روی نقشه انتخاب کنید.';
+    }
+    if (mode === 'current' && !Number.isFinite(Number(state.location.latitude))) requestCurrentLocation();
+  }
   persistReportDraft();
 }
 
+function openLocation() {
+  const mode = ['current', 'map', 'unknown'].includes(state.location.mode) ? state.location.mode : '';
+  setLocationModeVisual(mode);
+  renderLocationFields();
+  const status = document.getElementById('locationStatus');
+  if (mode === 'current' || mode === 'map') {
+    showReportMap();
+    restoreLocationMarker();
+    if (status) {
+      if (Number.isFinite(Number(state.location.latitude))) status.textContent = mode === 'current' ? 'موقعیت فعلی ثبت شده است.' : 'موقعیت انتخاب‌شده روی نقشه ثبت شده است.';
+      else status.textContent = mode === 'map' ? 'نقطه مکان وقوع را روی نقشه انتخاب کنید.' : 'برای دریافت موقعیت فعلی، گزینه را دوباره انتخاب کنید.';
+    }
+  } else {
+    hideReportMap();
+    if (status) status.textContent = '';
+  }
+  showPage('locationPage');
+}
+
 function continueLocation() {
-  state.location.province = document.getElementById('province').value.trim();
-  state.location.city = document.getElementById('city').value.trim();
-  state.location.address = document.getElementById('address').value.trim();
-  if (state.location.known === undefined) state.location.known = false;
+  captureLocationDraft();
+  const mode = state.location.mode;
+  if (!['current', 'map', 'unknown'].includes(mode)) return alert('روش تعیین مکان وقوع را انتخاب کنید.');
+  if (mode === 'unknown') {
+    if (!state.location.province) return alert('استان مکان وقوع را انتخاب کنید.');
+    if (!state.location.city) return alert('شهرستان مکان وقوع را انتخاب کنید.');
+    state.location.known = false;
+    delete state.location.latitude;
+    delete state.location.longitude;
+  } else {
+    if (!Number.isFinite(Number(state.location.latitude)) || !Number.isFinite(Number(state.location.longitude))) {
+      return alert(mode === 'current' ? 'دریافت موقعیت فعلی کامل نشده است.' : 'نقطه مکان وقوع را روی نقشه انتخاب کنید.');
+    }
+    state.location.known = true;
+    delete state.location.province;
+    delete state.location.city;
+  }
   if (state.category === 'افراد') return openIncidentReport();
   openDocuments();
 }
+
 
 function openIncidentReport() {
   renderIncidentReport();
@@ -1166,17 +1667,48 @@ function backFromDocuments() {
 
 function openDocuments() {
   const title = document.getElementById('documentsPageTitle');
-  if (title) title.textContent = state.category === 'افراد' ? 'مستندات گزارش' : 'تصویر گزارش';
+  if (title) title.textContent = 'مستندات گزارش';
   renderDocuments();
   showPage('documentsPage');
 }
 
+function isImageDocument(document) {
+  return Boolean(document) && typeof document.mime === 'string' && document.mime.startsWith('image/');
+}
+
+function documentTypeLabel(document) {
+  if (isImageDocument(document)) return 'تصویر';
+  const extension = typeof document.name === 'string' && document.name.includes('.')
+    ? document.name.split('.').pop().slice(0, 8).toUpperCase()
+    : '';
+  return extension || 'فایل';
+}
+
 function addDocuments(input) {
-  const files = Array.from(input.files || []).filter(file => file.type.startsWith('image/')).slice(0, 10);
-  files.forEach(file => {
+  const selectedFiles = Array.from(input.files || []);
+  const slots = Math.max(0, MAX_DOCUMENTS - state.documents.length);
+  const candidates = selectedFiles.slice(0, slots);
+  const accepted = candidates.filter(file => Number.isFinite(file.size) && file.size <= MAX_DOCUMENT_BYTES);
+  const oversized = candidates.length - accepted.length;
+  const overCount = Math.max(0, selectedFiles.length - slots);
+
+  if (oversized || overCount) {
+    const notices = [];
+    if (oversized) notices.push(`هر فایل باید حداکثر ${faDigits(5)} مگابایت باشد.`);
+    if (overCount) notices.push(`حداکثر ${faDigits(MAX_DOCUMENTS)} فایل قابل بارگذاری است.`);
+    alert(notices.join(' '));
+  }
+
+  accepted.forEach(file => {
     const reader = new FileReader();
     reader.onload = () => {
-      state.documents.push({ type: 'image', name: file.name, mime: file.type, data: reader.result });
+      state.documents.push({
+        type: String(file.type || '').startsWith('image/') ? 'image' : 'file',
+        name: file.name || 'فایل بدون نام',
+        mime: file.type || 'application/octet-stream',
+        size: file.size,
+        data: reader.result
+      });
       renderDocuments();
     };
     reader.readAsDataURL(file);
@@ -1186,13 +1718,19 @@ function addDocuments(input) {
 
 function renderDocuments() {
   const box = document.getElementById('documentList');
-  box.innerHTML = state.documents.map((document, index) => `
-    <div class="document-item">
-      <img src="${document.data}" alt="">
-      <span>${document.name}</span>
-      <button class="document-delete-button" type="button" aria-label="حذف تصویر ${faDigits(index + 1)}" onclick="removeDocument(${index})">${iconMarkup('trash', 'button-icon delete-icon')}<span>حذف</span></button>
-    </div>`).join('');
+  if (!box) return;
+  box.innerHTML = state.documents.map((document, index) => {
+    const imagePreview = isImageDocument(document)
+      ? `<img src="${escapeHtml(document.data)}" alt="">`
+      : `<span class="document-file-preview" aria-hidden="true">${iconMarkup('report', 'document-file-icon')}</span>`;
+    return `<div class="document-item">
+      ${imagePreview}
+      <span class="document-item-copy"><strong>${escapeHtml(document.name)}</strong><small>${documentTypeLabel(document)}</small></span>
+      <button class="document-delete-button" type="button" aria-label="حذف فایل ${faDigits(index + 1)}" onclick="removeDocument(${index})">${iconMarkup('trash', 'button-icon delete-icon')}<span>حذف</span></button>
+    </div>`;
+  }).join('');
 }
+
 
 function removeDocument(index) {
   state.documents.splice(index, 1);

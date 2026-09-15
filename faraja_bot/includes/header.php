@@ -101,6 +101,9 @@ function buttonIcon(string $name, string $class = 'button-icon'): string {
     <symbol id="icon-image-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3.5" y="5.25" width="17" height="13.5" rx="2.25"/><circle cx="8.5" cy="9.5" r="1.25"/><path d="m5.75 16.75 4.5-4.25 3.25 3 2.25-2.25 2.5 3.5M12 2.5v6M9.5 5l2.5-2.5L14.5 5"/>
     </symbol>
+    <symbol id="icon-document-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 3.75h6.25l3.75 3.75v12.75H7a2 2 0 0 1-2-2V5.75a2 2 0 0 1 2-2Z"/><path d="M13.25 3.75V7.5H17M12 17V9.5M9.25 12.25 12 9.5l2.75 2.75"/>
+    </symbol>
     <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="m20.25 3.75-7.2 16.5-3.4-6.45-6.4-3.1 17-6.95Z"/><path d="m9.65 13.8 4.55-4.55"/>
     </symbol>

@@ -106,6 +106,7 @@ function formHasMeaningfulValue(array $form): bool {
   foreach ($form as $key => $value) {
     if (is_scalar($value) && trim((string)$value) !== '') return true;
     if ($key === 'socialLinks' && is_array($value) && count($value) > 0) return true;
+    if ($key === 'vehiclePlate' && is_array($value) && !empty($value['template'])) return true;
   }
   return false;
 }
@@ -175,7 +176,7 @@ function normalize(array $input): array {
   ];
   $category = $categoryAliases[$category] ?? $category;
 
-  $allowedCategories = ['افراد', 'املاک', 'اشیاء', 'رویداد', 'نهاد و سازمان'];
+  $allowedCategories = ['افراد', 'املاک', 'اشیاء', 'رویداد'];
   if (!in_array($category, $allowedCategories, true)) {
     throw new InvalidArgumentException('موضوع گزارش نامعتبر است.');
   }
@@ -202,8 +203,26 @@ function normalize(array $input): array {
     $documents = [];
     foreach (array_slice($input['documents'], 0, 10) as $document) {
       if (!is_array($document)) continue;
-      $mime = (string)($document['mime'] ?? '');
-      if (str_starts_with($mime, 'image/')) $documents[] = $document;
+      $name = isset($document['name']) && is_string($document['name']) ? trim($document['name']) : '';
+      $data = isset($document['data']) && is_string($document['data']) ? $document['data'] : '';
+      if ($name === '' || strlen($name) > 255 || $data === '') {
+        throw new InvalidArgumentException('مشخصات فایل بارگذاری‌شده نامعتبر است.');
+      }
+      if (!preg_match('#^data:([^;,]+)(?:;[^,]*)*;base64,([A-Za-z0-9+/=]*)$#', $data, $matches)) {
+        throw new InvalidArgumentException('محتوای فایل بارگذاری‌شده نامعتبر است.');
+      }
+      $contents = base64_decode($matches[2], true);
+      if ($contents === false || strlen($contents) > 5 * 1024 * 1024) {
+        throw new InvalidArgumentException('حجم هر فایل نباید بیشتر از ۵ مگابایت باشد.');
+      }
+      $mime = strtolower($matches[1]);
+      $documents[] = [
+        'type' => str_starts_with($mime, 'image/') ? 'image' : 'file',
+        'name' => $name,
+        'mime' => $mime,
+        'size' => strlen($contents),
+        'data' => $data
+      ];
     }
     $report['documents'] = $documents;
   }
