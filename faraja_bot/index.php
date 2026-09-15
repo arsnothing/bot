@@ -163,10 +163,13 @@ require __DIR__ . '/includes/header.php';
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromPropertyOwners()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
-    <section class="property-location-stage" aria-label="مشخصات مالکین">
+    <div class="form-section-progress property-location-progress" role="progressbar" aria-label="بخش ۲ از ۶" aria-valuemin="1" aria-valuemax="6" aria-valuenow="2">
+      <span>بخش ۲ از ۶</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:33.333333%"></span></div>
+    </div>
+    <section class="property-location-stage" aria-labelledby="propertyOwnersStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۲ از ۶</span>
+        <h2 id="propertyOwnersStageTitle">مشخصات و محل ملک</h2>
         <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
       </header>
       <div id="propertyOwnersBody" class="property-location-stage-body"></div>
@@ -179,10 +182,13 @@ require __DIR__ . '/includes/header.php';
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromPropertyResidents()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
-    <section class="property-location-stage" aria-label="مشخصات ساکنین">
+    <div class="form-section-progress property-location-progress" role="progressbar" aria-label="بخش ۳ از ۶" aria-valuemin="1" aria-valuemax="6" aria-valuenow="3">
+      <span>بخش ۳ از ۶</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:50%"></span></div>
+    </div>
+    <section class="property-location-stage" aria-labelledby="propertyResidentsStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۳ از ۶</span>
+        <h2 id="propertyResidentsStageTitle">مشخصات و محل ملک</h2>
         <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
       </header>
       <div id="propertyResidentsBody" class="property-location-stage-body"></div>
@@ -195,10 +201,13 @@ require __DIR__ . '/includes/header.php';
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromPropertyVisitors()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
-    <section class="property-location-stage" aria-label="مشخصات ترددکنندگان">
+    <div class="form-section-progress property-location-progress" role="progressbar" aria-label="بخش ۴ از ۶" aria-valuemin="1" aria-valuemax="6" aria-valuenow="4">
+      <span>بخش ۴ از ۶</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:66.666667%"></span></div>
+    </div>
+    <section class="property-location-stage" aria-labelledby="propertyVisitorsStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۴ از ۶</span>
+        <h2 id="propertyVisitorsStageTitle">مشخصات و محل ملک</h2>
         <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
       </header>
       <div id="propertyVisitorsBody" class="property-location-stage-body"></div>
@@ -211,10 +220,12 @@ require __DIR__ . '/includes/header.php';
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromPropertyVehicles()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مکان وقوع</h1></div>
+    <div class="form-section-progress property-location-progress" role="progressbar" aria-label="بخش ۵ از ۶" aria-valuemin="1" aria-valuemax="6" aria-valuenow="5">
+      <span>بخش ۵ از ۶</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:83.333333%"></span></div>
+    </div>
     <section class="property-location-stage" aria-labelledby="propertyVehiclesStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۵ از ۶</span>
         <h2 id="propertyVehiclesStageTitle">اطلاعات خودرو یا موتورسیکلت</h2>
         <p>برای هر خودرو یا موتورسیکلت، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.</p>
       </header>
@@ -228,10 +239,12 @@ require __DIR__ . '/includes/header.php';
   <main class="shell form-shell">
     <button class="back-button button-with-icon" onclick="backFromPropertySecurity()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
-    <div class="page-head"><h1>مکان وقوع</h1></div>
+    <div class="form-section-progress property-location-progress" role="progressbar" aria-label="بخش ۶ از ۶" aria-valuemin="1" aria-valuemax="6" aria-valuenow="6">
+      <span>بخش ۶ از ۶</span>
+      <div class="form-section-progress-track" aria-hidden="true"><span style="--form-progress:100%"></span></div>
+    </div>
     <section class="property-location-stage" aria-labelledby="propertySecurityStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۶ از ۶</span>
         <h2 id="propertySecurityStageTitle">اقدامات حفاظتی ملک</h2>
         <p>وضعیت حفاظت و مراقبتی ملک را شرح دهید.</p>
       </header>
