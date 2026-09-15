@@ -62,21 +62,21 @@ require __DIR__ . '/includes/header.php';
     <button class="back-button button-with-icon" onclick="showPage('homePage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="page-head"><h1>موضوع گزارش</h1></div>
     <div class="category-grid">
-      <button class="category-card" onclick="chooseCategory('فرد')" type="button">
-        <?= buttonIcon('person', 'category-icon') ?>
-        <strong>فرد</strong>
-      </button>
-      <button class="category-card" onclick="chooseCategory('پدیده اجتماعی')" type="button">
+      <button class="category-card" onclick="chooseCategory('افراد')" type="button">
         <?= buttonIcon('community', 'category-icon') ?>
-        <strong>پدیده اجتماعی</strong>
+        <strong>افراد</strong>
       </button>
-      <button class="category-card" onclick="chooseCategory('ملک')" type="button">
-        <?= buttonIcon('property', 'category-icon') ?>
-        <strong>ملک</strong>
+      <button class="category-card" onclick="chooseCategory('رویداد')" type="button">
+        <?= buttonIcon('event', 'category-icon') ?>
+        <strong>رویداد</strong>
       </button>
-      <button class="category-card" onclick="chooseCategory('شیء')" type="button">
-        <?= buttonIcon('object', 'category-icon') ?>
-        <strong>شیء</strong>
+      <button class="category-card" onclick="chooseCategory('املاک')" type="button">
+        <?= buttonIcon('properties', 'category-icon') ?>
+        <strong>املاک</strong>
+      </button>
+      <button class="category-card" onclick="chooseCategory('اشیاء')" type="button">
+        <?= buttonIcon('objects', 'category-icon') ?>
+        <strong>اشیاء</strong>
       </button>
     </div>
   </main>
@@ -85,7 +85,7 @@ require __DIR__ . '/includes/header.php';
 <section id="objectTypePage" class="page">
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('categoryPage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="page-head"><h1>نوع شیء</h1></div>
+    <div class="page-head"><h1>نوع اشیاء</h1></div>
     <div class="option-grid">
       <button class="option-card" onclick="chooseSubtype('بسته مشکوک')" type="button"><?= buttonIcon('package', 'subtype-svg') ?><strong>بسته مشکوک</strong></button>
       <button class="option-card" onclick="chooseSubtype('خودرو مشکوک')" type="button"><?= buttonIcon('car', 'subtype-svg') ?><strong>خودرو مشکوک</strong></button>
@@ -98,7 +98,7 @@ require __DIR__ . '/includes/header.php';
 <section id="phenomenonTypePage" class="page">
   <main class="shell">
     <button class="back-button button-with-icon" onclick="showPage('categoryPage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
-    <div class="page-head"><h1>نوع پدیده اجتماعی</h1></div>
+    <div class="page-head"><h1>نوع رویداد</h1></div>
     <div class="option-grid">
       <button class="option-card" onclick="chooseSubtype('تجمع، تحصن یا اغتشاش')" type="button"><?= buttonIcon('crowd', 'subtype-svg') ?><strong>تجمع، تحصن یا اغتشاش</strong></button>
       <button class="option-card" onclick="chooseSubtype('انفجار یا آتش‌سوزی')" type="button"><?= buttonIcon('fire', 'subtype-svg') ?><strong>انفجار یا آتش‌سوزی</strong></button>

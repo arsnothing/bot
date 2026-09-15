@@ -20,21 +20,22 @@ function buttonIcon(string $name, string $class = 'button-icon'): string {
       <path d="M7 3.75h6.5L18.5 8.7v11.55H7a2 2 0 0 1-2-2V5.75a2 2 0 0 1 2-2Z"/>
       <path d="M13.5 3.75V8.7h5M9 13h6M9 16.5h4.25"/>
     </symbol>
-    <symbol id="icon-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="7.25" r="3.25"/>
-      <path d="M5.25 20.25c.6-3.65 3.1-5.75 6.75-5.75s6.15 2.1 6.75 5.75"/>
+    <symbol id="icon-event" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.25" y="5.25" width="17.5" height="15" rx="2.5"/>
+      <path d="M7.5 3.5v3.6M16.5 3.5v3.6M3.25 9.5h17.5M12 12.3v3.1M12 17.35h.01"/>
     </symbol>
     <symbol id="icon-community" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="6.75" r="2.75"/><circle cx="5.75" cy="9" r="2.25"/><circle cx="18.25" cy="9" r="2.25"/>
       <path d="M7.25 20c.4-3.25 2.1-5.25 4.75-5.25s4.35 2 4.75 5.25M1.75 19.75c.3-2.45 1.6-3.9 4-3.9 1.45 0 2.5.55 3.2 1.55M22.25 19.75c-.3-2.45-1.6-3.9-4-3.9-1.45 0-2.5.55-3.2 1.55"/>
     </symbol>
-    <symbol id="icon-property" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m3.5 10.5 8.5-6.75 8.5 6.75v9.75H3.5V10.5Z"/>
-      <path d="M8.25 20.25v-5.5h7.5v5.5M8.25 10.25h.01M15.75 10.25h.01"/>
+    <symbol id="icon-properties" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m1.75 13.25 3.6-3 3.6 3v5.5h-7.2v-5.5ZM15.05 13.25l3.6-3 3.6 3v5.5h-7.2v-5.5Z"/>
+      <path d="m7 9.75 5-4.25 5 4.25v9H7v-9ZM10.25 18.75v-3.75h3.5v3.75M4.1 18.75V16.4M19.9 18.75V16.4"/>
     </symbol>
-    <symbol id="icon-object" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 3.75h7l3.5 3.5v10.5a2.5 2.5 0 0 1-2.5 2.5H7a2.5 2.5 0 0 1-2.5-2.5v-11A3 3 0 0 1 7 3.75Z"/>
-      <path d="M14 3.75v4h3.5M8.25 12h7.5M8.25 15.5h5"/>
+    <symbol id="icon-objects" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m2.25 13 3.25-1.9L8.75 13 5.5 14.9 2.25 13ZM2.25 13v5.2L5.5 20l3.25-1.8V13M5.5 14.9V20"/>
+      <path d="M11 8h2v2.35l1.25 1.5V19H9.75v-7.15l1.25-1.5V8ZM9.75 13h4.5"/>
+      <path d="M16.25 12.25h5.5v6.5h-5.5v-6.5ZM17.75 12.25v-1.5h2.5v1.5M19 15.5h.01"/>
     </symbol>
     <symbol id="icon-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="m4 7.5 8-4 8 4-8 4-8-4Z"/><path d="M4 7.5v9l8 4 8-4v-9M12 11.5v9"/>

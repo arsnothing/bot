@@ -13,6 +13,17 @@ let marker = null;
 
 const forms = {};
 
+const CATEGORY_ALIASES = Object.freeze({
+  'فرد': 'افراد',
+  'ملک': 'املاک',
+  'شیء': 'اشیاء',
+  'پدیده اجتماعی': 'رویداد'
+});
+
+function canonicalCategory(category) {
+  return CATEGORY_ALIASES[category] || category;
+}
+
 function iconMarkup(name, className = 'button-icon') {
   return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
 }
@@ -109,12 +120,13 @@ function openLocationRegistration() {
 }
 
 function chooseCategory(category) {
+  category = canonicalCategory(category);
   state.category = category;
   state.subtype = '';
   state.form = {};
   state.formStep = 0;
-  if (category === 'شیء') return showPage('objectTypePage');
-  if (category === 'پدیده اجتماعی') return showPage('phenomenonTypePage');
+  if (category === 'اشیاء') return showPage('objectTypePage');
+  if (category === 'رویداد') return showPage('phenomenonTypePage');
   openForm();
 }
 
@@ -238,10 +250,11 @@ function renderFormSection(sections = buildForm(state.category, state.subtype)) 
 }
 
 function buildForm(category, subtype) {
-  if (category === 'فرد') return personForm();
-  if (category === 'ملک') return propertyForm();
-  if (category === 'شیء') return objectForm(subtype);
-  if (category === 'پدیده اجتماعی') return phenomenonForm(subtype);
+  category = canonicalCategory(category);
+  if (category === 'افراد') return personForm();
+  if (category === 'املاک') return propertyForm();
+  if (category === 'اشیاء') return objectForm(subtype);
+  if (category === 'رویداد') return phenomenonForm(subtype);
   return orgForm();
 }
 
@@ -434,8 +447,8 @@ function continueForm() {
 function backFromForm() {
   if (state.formStep > 0) return previousFormSection();
   collectForm();
-  if (state.category === 'شیء') return showPage('objectTypePage');
-  if (state.category === 'پدیده اجتماعی') return showPage('phenomenonTypePage');
+  if (state.category === 'اشیاء') return showPage('objectTypePage');
+  if (state.category === 'رویداد') return showPage('phenomenonTypePage');
   showPage('categoryPage');
 }
 

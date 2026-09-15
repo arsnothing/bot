@@ -95,7 +95,16 @@ function normalize(array $input): array {
   $category = clean($input['category'] ?? null);
   if (!$category) throw new InvalidArgumentException('موضوع گزارش مشخص نشده است.');
 
-  $allowedCategories = ['فرد', 'ملک', 'شیء', 'پدیده اجتماعی', 'نهاد و سازمان'];
+  // نام‌های پیشین برای نسخه‌های ذخیره‌شده یا مرورگرهای دارای کش، به عنوان جدید یکپارچه می‌شوند.
+  $categoryAliases = [
+    'فرد' => 'افراد',
+    'ملک' => 'املاک',
+    'شیء' => 'اشیاء',
+    'پدیده اجتماعی' => 'رویداد'
+  ];
+  $category = $categoryAliases[$category] ?? $category;
+
+  $allowedCategories = ['افراد', 'املاک', 'اشیاء', 'رویداد', 'نهاد و سازمان'];
   if (!in_array($category, $allowedCategories, true)) {
     throw new InvalidArgumentException('موضوع گزارش نامعتبر است.');
   }
