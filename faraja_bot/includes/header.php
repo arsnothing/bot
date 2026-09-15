@@ -83,8 +83,15 @@ function buttonIcon(string $name, string $class = 'button-icon'): string {
     <symbol id="icon-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="m3.75 6.25 5-2.5 6.5 2.5 5-2.5v14.5l-5 2.5-6.5-2.5-5 2.5V6.25Z"/><path d="M8.75 3.75v14.5M15.25 6.25v14.5"/>
     </symbol>
+    <symbol id="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.75 10.25c0 4.65-5.75 9.9-5.75 9.9s-5.75-5.25-5.75-9.9a5.75 5.75 0 1 1 11.5 0Z"/><circle cx="12" cy="10.25" r="2"/>
+    </symbol>
     <symbol id="icon-pin-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M17.5 10.25c0 4.35-5.5 9.5-5.5 9.5s-5.5-5.15-5.5-9.5a5.5 5.5 0 1 1 11 0Z"/><circle cx="12" cy="10.25" r="1.75"/><path d="m4 4 16 16"/>
+    </symbol>
+    <symbol id="icon-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.1M12 18.9V21M21 12h-2.1M5.1 12H3M18.36 5.64l-1.48 1.48M7.12 16.88l-1.48 1.48M18.36 18.36l-1.48-1.48M7.12 7.12 5.64 5.64"/>
+      <path d="m16.55 7.45 1.55-.55 1.1 1.9-1.15 1.15c.1.4.15.8.15 1.2s-.05.8-.15 1.2l1.15 1.15-1.1 1.9-1.55-.55c-.32.28-.68.48-1.08.64L15.15 17h-2.3l-.32-1.65a5.5 5.5 0 0 1-1.08-.64l-1.55.55-1.1-1.9 1.15-1.15a4.7 4.7 0 0 1 0-2.4L8.8 8.65l1.1-1.9 1.55.55c.32-.28.68-.48 1.08-.64L12.85 5h2.3l.32 1.66c.4.16.76.36 1.08.64Z"/>
     </symbol>
     <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="m5 12.5 4.25 4.25L19 7.25"/>

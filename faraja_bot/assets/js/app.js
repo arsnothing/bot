@@ -104,6 +104,10 @@ function startReport() {
   showPage('categoryPage');
 }
 
+function openLocationRegistration() {
+  showPage('locationRegistrationPage');
+}
+
 function chooseCategory(category) {
   state.category = category;
   state.subtype = '';

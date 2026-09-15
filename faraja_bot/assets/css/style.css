@@ -595,3 +595,231 @@ html,body{background:var(--bg);color:var(--text)}
   }
   #timePage .time-choices .button-icon{width:17px;height:17px}
 }
+
+/* ثبت موقعیت مکانی — صفحهٔ در حال ساخت */
+.home-buttons{
+  display:grid;
+  gap:10px;
+}
+.home-buttons .secondary-main-card{
+  border:1px solid #cbded2;
+  background:#fff;
+  color:var(--green);
+  box-shadow:0 6px 14px rgba(36,75,59,.07);
+}
+.home-buttons .secondary-main-card:hover{
+  border-color:#abc6b6;
+  background:var(--green-soft);
+  color:var(--green-dark);
+  box-shadow:0 10px 20px rgba(36,75,59,.10);
+}
+#locationRegistrationPage{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(205,227,214,.64), transparent 32%),
+    var(--bg);
+}
+.construction-shell{
+  width:min(640px,92%);
+  min-height:100vh;
+  margin:auto;
+  padding:26px 0 42px;
+}
+.construction-card{
+  position:relative;
+  overflow:hidden;
+  margin-top:24px;
+  padding:30px 22px 28px;
+  border:1px solid #dce8e0;
+  border-radius:24px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 16px 38px rgba(24,58,45,.08);
+  text-align:center;
+}
+.construction-card::before,
+.construction-card::after{
+  position:absolute;
+  width:140px;
+  height:140px;
+  border:1px solid rgba(104,151,122,.12);
+  border-radius:50%;
+  content:"";
+  pointer-events:none;
+}
+.construction-card::before{top:-88px;right:-65px}
+.construction-card::after{bottom:-102px;left:-70px}
+.construction-visual{
+  position:relative;
+  width:min(100%,260px);
+  height:198px;
+  margin:0 auto 5px;
+}
+.construction-glow{
+  position:absolute;
+  right:50%;
+  bottom:9px;
+  width:180px;
+  height:54px;
+  border-radius:50%;
+  background:rgba(181,214,192,.58);
+  filter:blur(17px);
+  transform:translateX(50%);
+  animation:construction-glow 2.4s ease-in-out infinite alternate;
+}
+.construction-building{
+  position:absolute;
+  bottom:18px;
+  right:50%;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:9px;
+  width:106px;
+  height:111px;
+  padding:25px 17px 15px;
+  border:2px solid #2f604c;
+  border-bottom-width:5px;
+  border-radius:13px 13px 7px 7px;
+  background:linear-gradient(160deg,#f7fcf8,#dfefe4);
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.55),0 11px 20px rgba(36,75,59,.12);
+  transform:translateX(50%);
+  animation:construction-rise 2.6s ease-in-out infinite alternate;
+}
+.construction-building::before{
+  position:absolute;
+  top:-14px;
+  right:11px;
+  width:79px;
+  height:18px;
+  border:2px solid #2f604c;
+  border-bottom:0;
+  border-radius:9px 9px 0 0;
+  background:#eef7f1;
+  content:"";
+}
+.construction-building span{
+  display:block;
+  min-width:0;
+  border-radius:3px;
+  background:#71a083;
+  box-shadow:0 0 0 2px rgba(255,255,255,.6);
+  animation:construction-window 1.8s ease-in-out infinite alternate;
+}
+.construction-building span:nth-child(2),
+.construction-building span:nth-child(5){animation-delay:.35s}
+.construction-building span:nth-child(3),
+.construction-building span:nth-child(6){animation-delay:.7s}
+.construction-block{
+  position:absolute;
+  bottom:17px;
+  width:27px;
+  height:27px;
+  border:2px solid #47765b;
+  border-radius:6px;
+  background:#c7e0d0;
+  box-shadow:0 6px 12px rgba(36,75,59,.1);
+  animation:construction-block 2.2s ease-in-out infinite;
+}
+.construction-block-one{right:24px;animation-delay:-.7s}
+.construction-block-two{right:51px;bottom:46px;animation-delay:-1.25s}
+.construction-gear{
+  position:absolute;
+  z-index:2;
+  display:block;
+  color:#2f604c;
+  filter:drop-shadow(0 7px 8px rgba(36,75,59,.12));
+}
+.construction-gear-large{
+  bottom:0;
+  left:10px;
+  width:88px;
+  height:88px;
+  animation:construction-spin 7s linear infinite;
+}
+.construction-gear-small{
+  right:2px;
+  bottom:54px;
+  width:57px;
+  height:57px;
+  color:#6e9d7d;
+  animation:construction-spin-reverse 4.2s linear infinite;
+}
+.construction-status{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:2px 0 10px;
+  padding:7px 11px;
+  border:1px solid #d5e7da;
+  border-radius:999px;
+  background:#f3faf5;
+  color:#3e6d50;
+  font-size:12px;
+  font-weight:800;
+}
+.construction-status span{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#57a16e;
+  box-shadow:0 0 0 0 rgba(87,161,110,.42);
+  animation:construction-pulse 1.7s ease-out infinite;
+}
+.construction-card h1{
+  position:relative;
+  margin:0;
+  color:var(--green-dark);
+  font-size:28px;
+  font-weight:900;
+  line-height:1.62;
+}
+.construction-copy{
+  position:relative;
+  max-width:410px;
+  margin:12px auto 21px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:2;
+}
+.construction-progress{
+  position:relative;
+  overflow:hidden;
+  width:min(100%,360px);
+  height:7px;
+  margin:auto;
+  border-radius:999px;
+  background:#e5efe8;
+}
+.construction-progress span{
+  position:absolute;
+  top:0;
+  right:-45%;
+  width:45%;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#72a887,#244b3b,#72a887);
+  animation:construction-progress 2.4s ease-in-out infinite;
+}
+@keyframes construction-spin{to{transform:rotate(360deg)}}
+@keyframes construction-spin-reverse{to{transform:rotate(-360deg)}}
+@keyframes construction-glow{to{opacity:.55;transform:translateX(50%) scale(.86)}}
+@keyframes construction-rise{to{transform:translateX(50%) translateY(-5px) scale(1.025)}}
+@keyframes construction-window{to{background:#b9dbc4;box-shadow:0 0 0 2px rgba(255,255,255,.7),0 0 10px rgba(112,168,135,.3)}}
+@keyframes construction-block{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-17px) rotate(8deg)}}
+@keyframes construction-pulse{70%{box-shadow:0 0 0 7px rgba(87,161,110,0)}100%{box-shadow:0 0 0 0 rgba(87,161,110,0)}}
+@keyframes construction-progress{0%{transform:translateX(0)}55%,100%{transform:translateX(-325%)}}
+@media(max-width:430px){
+  .construction-shell{width:92%;padding-top:22px}
+  .construction-card{margin-top:18px;padding:25px 16px 24px;border-radius:20px}
+  .construction-visual{height:180px;transform:scale(.92);transform-origin:top center;margin-bottom:-12px}
+  .construction-card h1{font-size:24px}
+  .construction-copy{font-size:13px;line-height:1.9}
+}
+@media(prefers-reduced-motion:reduce){
+  .construction-glow,
+  .construction-building,
+  .construction-building span,
+  .construction-block,
+  .construction-gear,
+  .construction-status span,
+  .construction-progress span{animation:none!important}
+}

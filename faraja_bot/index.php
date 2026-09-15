@@ -30,7 +30,33 @@ require __DIR__ . '/includes/header.php';
         <?= buttonIcon('report', 'button-icon main-icon') ?>
         <strong>ثبت گزارش</strong>
       </button>
+      <button class="main-card secondary-main-card button-with-icon" onclick="openLocationRegistration()" type="button">
+        <?= buttonIcon('pin', 'button-icon main-icon') ?>
+        <strong>ثبت موقعیت مکانی</strong>
+      </button>
     </div>
+  </main>
+</section>
+
+<section id="locationRegistrationPage" class="page construction-page">
+  <main class="construction-shell">
+    <button class="back-button button-with-icon" onclick="showPage('homePage')" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <section class="construction-card" aria-labelledby="constructionTitle">
+      <div class="construction-visual" aria-hidden="true">
+        <div class="construction-glow"></div>
+        <div class="construction-building">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="construction-block construction-block-one"></div>
+        <div class="construction-block construction-block-two"></div>
+        <?= buttonIcon('gear', 'construction-gear construction-gear-large') ?>
+        <?= buttonIcon('gear', 'construction-gear construction-gear-small') ?>
+      </div>
+      <p id="constructionStatus" class="construction-status" aria-live="polite"><span></span>در حال آماده‌سازی</p>
+      <h1 id="constructionTitle">ثبت موقعیت مکانی<br>در حال ساخت است</h1>
+      <p class="construction-copy">این بخش به‌زودی در دسترس قرار می‌گیرد. در حال آماده‌سازی تجربه‌ای دقیق‌تر و بهتر برای ثبت موقعیت هستیم.</p>
+      <div class="construction-progress" aria-hidden="true"><span></span></div>
+    </section>
   </main>
 </section>
 
