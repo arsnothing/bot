@@ -52,6 +52,9 @@ const RESTORABLE_PAGE_IDS = new Set([
   'formPage',
   'timePage',
   'locationPage',
+  'propertyOwnersPage',
+  'propertyResidentsPage',
+  'propertyVisitorsPage',
   'propertyVehiclesPage',
   'propertySecurityPage',
   'incidentReportPage',
@@ -315,10 +318,9 @@ function activePageId() {
 function capturePageDraft(pageId) {
   if (pageId === 'formPage' || pageId === 'incidentReportPage') collectForm();
   if (pageId === 'timePage') captureTimeDraft();
-  if (pageId === 'locationPage') {
-    captureLocationDraft();
-    if (isPropertyReport()) collectPropertyPeopleDetails();
-  }
+  if (pageId === 'locationPage') captureLocationDraft();
+  const propertyPersonRole = propertyPersonRoleForPage(pageId);
+  if (propertyPersonRole) collectPropertyPeopleDetails(propertyPersonRole);
   if (pageId === 'propertyVehiclesPage') collectPropertyVehicleDetails();
   if (pageId === 'propertySecurityPage') collectPropertySecurityDetails();
 }
@@ -406,6 +408,7 @@ function restoreReportDraft() {
   state.form = { ...savedForm };
   clearRetiredIncidentFields(state.form);
   if (state.category === 'املاک') clearRetiredPropertyFields(state.form);
+  if (state.category === 'افراد') normalizeLandlinePhoneState(state.form);
   state.formStep = state.category === 'املاک' ? 0 : savedFormStep;
   state.location = isPlainRecord(savedState.location) ? { ...savedState.location } : {};
   normalizeLocationDetailFields(state.location);
@@ -415,14 +418,15 @@ function restoreReportDraft() {
   timeDraft = restoredTimeDraft(snapshot.timeDraft);
 
   let pageId = typeof snapshot.page === 'string' && RESTORABLE_PAGE_IDS.has(snapshot.page) ? snapshot.page : 'homePage';
-  const needsCategory = new Set(['objectTypePage', 'phenomenonTypePage', 'formPage', 'timePage', 'locationPage', 'propertyVehiclesPage', 'propertySecurityPage', 'incidentReportPage', 'documentsPage']);
+  const needsCategory = new Set(['objectTypePage', 'phenomenonTypePage', 'formPage', 'timePage', 'locationPage', 'propertyOwnersPage', 'propertyResidentsPage', 'propertyVisitorsPage', 'propertyVehiclesPage', 'propertySecurityPage', 'incidentReportPage', 'documentsPage']);
   if (needsCategory.has(pageId) && !state.category) pageId = 'categoryPage';
   if (pageId === 'objectTypePage' && state.category !== 'اشیاء') pageId = 'categoryPage';
   if (pageId === 'phenomenonTypePage' && state.category !== 'رویداد') pageId = 'categoryPage';
+  if (PROPERTY_PERSON_PAGE_IDS.has(pageId) && state.category !== 'املاک') pageId = 'categoryPage';
   if (['propertyVehiclesPage', 'propertySecurityPage'].includes(pageId) && state.category !== 'املاک') pageId = 'categoryPage';
   if (restoresPreviousPropertyLayout && pageId === 'formPage') {
     pageId = savedFormStep === 0
-      ? 'locationPage'
+      ? 'propertyOwnersPage'
       : savedFormStep === 1
         ? 'propertyVehiclesPage'
         : savedFormStep === 2
@@ -436,6 +440,9 @@ function restoreReportDraft() {
     if (pageId === 'formPage') openForm();
     else if (pageId === 'timePage') openTime();
     else if (pageId === 'locationPage') openLocation();
+    else if (pageId === 'propertyOwnersPage') openPropertyOwners();
+    else if (pageId === 'propertyResidentsPage') openPropertyResidents();
+    else if (pageId === 'propertyVisitorsPage') openPropertyVisitors();
     else if (pageId === 'propertyVehiclesPage') openPropertyVehicles();
     else if (pageId === 'propertySecurityPage') openPropertySecurity();
     else if (pageId === 'incidentReportPage') openIncidentReport();
@@ -473,7 +480,7 @@ function normalizeFieldValue(element) {
 }
 
 function resizeTextarea(textarea) {
-  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"], #locationPage textarea[data-auto-resize="true"], #propertyVehiclesBody textarea[data-auto-resize="true"], #propertySecurityBody textarea[data-auto-resize="true"]')) return;
+  if (!textarea.matches('#formBody textarea[data-auto-resize="true"], #incidentReportBody textarea[data-auto-resize="true"], #locationPage textarea[data-auto-resize="true"], #propertyOwnersBody textarea[data-auto-resize="true"], #propertyResidentsBody textarea[data-auto-resize="true"], #propertyVisitorsBody textarea[data-auto-resize="true"], #propertyVehiclesBody textarea[data-auto-resize="true"], #propertySecurityBody textarea[data-auto-resize="true"]')) return;
   const maxHeight = 280;
   textarea.style.height = 'auto';
   const height = Math.min(Math.max(textarea.scrollHeight, 52), maxHeight);
@@ -512,6 +519,11 @@ document.addEventListener('input', event => {
   if (target.matches('[data-vehicle-plate-input]')) {
     normalizeVehiclePlateInput(target);
     syncVehiclePlatePreview(target);
+    persistReportDraft();
+    return;
+  }
+  if (target.matches('[data-landline-subscriber]')) {
+    normalizeLandlineSubscriberInput(target);
     persistReportDraft();
     return;
   }
@@ -575,7 +587,15 @@ function resetReport() {
 function startReport() {
   resetReport();
   clearReportDraft();
-  showPage('categoryPage');
+  // Do not let showPage capture fields that are still mounted from a previous
+  // report while the fresh category page is being opened.
+  const wasRestoring = isRestoringDraft;
+  isRestoringDraft = true;
+  try {
+    showPage('categoryPage');
+  } finally {
+    isRestoringDraft = wasRestoring;
+  }
 }
 
 function openLocationRegistration() {
@@ -588,34 +608,47 @@ function chooseCategory(category) {
   // Selecting a category begins a fresh report. In particular, a map point or
   // unknown-location data from a previously abandoned category must not leak
   // into the property route, where location is its first required stage.
-  state.category = category;
-  state.subtype = '';
-  state.form = {};
-  state.formStep = 0;
-  state.location = {};
-  state.time = {};
-  state.documents = [];
-  timeDraft = null;
-  locationRequestSequence += 1;
-  clearLocationMarker();
-  ['propertyLocationFormBody', 'propertyVehiclesBody', 'propertySecurityBody'].forEach(id => {
-    const body = document.getElementById(id);
-    if (body) {
-      body.innerHTML = '';
-      body.hidden = id === 'propertyLocationFormBody';
-    }
-  });
-  if (category === 'اشیاء') return showPage('objectTypePage');
-  if (category === 'رویداد') return showPage('phenomenonTypePage');
-  if (category === 'املاک') return openLocation();
-  openForm();
+  // showPage normally captures the outgoing page first, so pause that capture
+  // while its stale DOM belongs to the report just discarded above.
+  const wasRestoring = isRestoringDraft;
+  isRestoringDraft = true;
+  try {
+    state.category = category;
+    state.subtype = '';
+    state.form = {};
+    state.formStep = 0;
+    state.location = {};
+    state.time = {};
+    state.documents = [];
+    timeDraft = null;
+    locationRequestSequence += 1;
+    clearLocationMarker();
+    ['propertyOwnersBody', 'propertyResidentsBody', 'propertyVisitorsBody', 'propertyVehiclesBody', 'propertySecurityBody'].forEach(id => {
+      const body = document.getElementById(id);
+      if (body) body.innerHTML = '';
+    });
+    if (category === 'اشیاء') return showPage('objectTypePage');
+    if (category === 'رویداد') return showPage('phenomenonTypePage');
+    if (category === 'املاک') return openLocation();
+    return openForm();
+  } finally {
+    isRestoringDraft = wasRestoring;
+    if (!wasRestoring) persistReportDraft();
+  }
 }
 
 function chooseSubtype(subtype) {
-  state.subtype = subtype;
-  state.form = {};
-  state.formStep = 0;
-  openForm();
+  const wasRestoring = isRestoringDraft;
+  isRestoringDraft = true;
+  try {
+    state.subtype = subtype;
+    state.form = {};
+    state.formStep = 0;
+    return openForm();
+  } finally {
+    isRestoringDraft = wasRestoring;
+    if (!wasRestoring) persistReportDraft();
+  }
 }
 
 function field(name, label, type = 'text', options = {}) {
@@ -661,6 +694,45 @@ const MAX_DOCUMENTS = 10;
 const MAX_DOCUMENT_TOTAL_BYTES = 100 * 1024 * 1024;
 const MAX_VEHICLES = 10;
 const MAX_PROPERTY_PEOPLE = 10;
+
+// National fixed-line prefixes are province-wide after Iran's co-numbering plan.
+const LANDLINE_AREA_CODES = Object.freeze({
+  'آذربایجان شرقی': '041',
+  'آذربایجان غربی': '044',
+  'اردبیل': '045',
+  'اصفهان': '031',
+  'البرز': '026',
+  'ایلام': '084',
+  'بوشهر': '077',
+  'تهران': '021',
+  'چهارمحال و بختیاری': '038',
+  'خراسان جنوبی': '056',
+  'خراسان رضوی': '051',
+  'خراسان شمالی': '058',
+  'خوزستان': '061',
+  'زنجان': '024',
+  'سمنان': '023',
+  'سیستان و بلوچستان': '054',
+  'فارس': '071',
+  'قزوین': '028',
+  'قم': '025',
+  'کردستان': '087',
+  'کرمان': '034',
+  'کرمانشاه': '083',
+  'کهگیلویه و بویراحمد': '074',
+  'گلستان': '017',
+  'گیلان': '013',
+  'لرستان': '066',
+  'مازندران': '011',
+  'مرکزی': '086',
+  'هرمزگان': '076',
+  'همدان': '081',
+  'یزد': '035'
+});
+const LANDLINE_FIELD_CONFIGS = Object.freeze([
+  Object.freeze({ field: 'phoneFixed', provinceField: 'phoneFixedProvince', provinceLabel: 'استان محل سکونت', label: 'شماره ثابت محل سکونت' }),
+  Object.freeze({ field: 'phoneWork', provinceField: 'phoneWorkProvince', provinceLabel: 'استان محل کار', label: 'شماره ثابت محل کار' })
+]);
 
 const VEHICLE_KIND_OPTIONS = Object.freeze([
   { value: 'خودرو', label: 'خودرو', search: 'خودرو سواری وانت کامیون اتوبوس' },
@@ -825,6 +897,10 @@ function handleSearchableSelectChange(component) {
     updateLocationCountyPicker(province);
     return;
   }
+  if (name && name.startsWith('landlineProvince-')) {
+    updateLandlineProvince(component);
+    return;
+  }
   if (name && name.startsWith('vehicleKind-')) {
     updateVehicleKind(component);
     return;
@@ -844,6 +920,129 @@ function setSearchableSelectDisabled(component, disabled, placeholder = 'انت�
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
   }
   updateSearchableSelectPresentation(component);
+}
+
+function landlineFieldConfig(fieldName) {
+  return LANDLINE_FIELD_CONFIGS.find(config => config.field === fieldName) || null;
+}
+
+function landlineProvinceItems() {
+  return Object.entries(LANDLINE_AREA_CODES).map(([province, prefix]) => ({
+    value: province,
+    label: province,
+    detail: `پیش‌شماره ${faDigits(prefix)}`,
+    search: `${province} ${prefix} ${faDigits(prefix)}`
+  }));
+}
+
+function landlineDigits(value) {
+  return faDigits(String(value ?? '')).replace(/[^۰-۹]/g, '');
+}
+
+function landlineProvinceForNumber(value) {
+  const digits = enDigits(landlineDigits(value));
+  return Object.keys(LANDLINE_AREA_CODES).find(province => digits.startsWith(LANDLINE_AREA_CODES[province])) || '';
+}
+
+function landlineSubscriberFromNumber(value, prefix) {
+  const digits = landlineDigits(value);
+  const normalizedPrefix = faDigits(prefix || '');
+  if (!digits) return '';
+  if (normalizedPrefix && digits.startsWith(normalizedPrefix)) return digits.slice(normalizedPrefix.length, normalizedPrefix.length + 8);
+  // A pasted complete phone can carry another provincial prefix; preserve its
+  // subscriber portion while the selected province supplies the new prefix.
+  if (digits.length >= 11) return digits.slice(-8);
+  return digits.slice(0, 8);
+}
+
+function selectedLandlineProvince(config, form = state.form) {
+  if (!config || !isPlainRecord(form)) return '';
+  const selected = typeof form[config.provinceField] === 'string' ? form[config.provinceField] : '';
+  if (Object.prototype.hasOwnProperty.call(LANDLINE_AREA_CODES, selected)) return selected;
+  const inferred = landlineProvinceForNumber(form[config.field]);
+  if (inferred) form[config.provinceField] = inferred;
+  return inferred;
+}
+
+function landlineContactFieldMarkup(fieldName) {
+  const config = landlineFieldConfig(fieldName);
+  if (!config) return '';
+  const province = selectedLandlineProvince(config);
+  const prefix = LANDLINE_AREA_CODES[province] || '';
+  const subscriber = prefix ? landlineSubscriberFromNumber(state.form[fieldName], prefix) : '';
+  const inputId = `landline-${fieldName}`;
+  const helpId = `${inputId}-help`;
+  return `<section class="landline-contact-field" data-landline-contact data-landline-field="${fieldName}" data-landline-province-field="${config.provinceField}" data-landline-prefix="${prefix}">
+    ${searchableSelectMarkup(`landlineProvince-${fieldName}`, config.provinceLabel, landlineProvinceItems(), { value: province, placeholder: 'استان را انتخاب کنید' })}
+    <div class="field-group">
+      <label for="${inputId}">${config.label}</label>
+      <div class="landline-phone-entry">
+        <span class="landline-prefix" data-landline-prefix-display aria-label="پیش‌شماره استان">${prefix ? faDigits(prefix) : '—'}</span>
+        <input id="${inputId}" class="field-input numeric landline-subscriber-input" type="text" data-landline-subscriber data-label="${config.label}" data-validation="landline" data-numeric="true" maxlength="8" inputmode="numeric" autocomplete="tel-national" aria-describedby="${helpId}" value="${escapeHtml(subscriber)}"${prefix ? '' : ' disabled'}>
+      </div>
+      <p id="${helpId}" class="landline-help">۸ رقم شماره ثابت را پس از پیش‌شماره وارد کنید.</p>
+    </div>
+  </section>`;
+}
+
+function normalizeLandlineSubscriberInput(input) {
+  const container = input && typeof input.closest === 'function' ? input.closest('[data-landline-contact]') : null;
+  input.value = landlineSubscriberFromNumber(input.value, container ? container.dataset.landlinePrefix : '');
+}
+
+function updateLandlineProvince(component) {
+  const container = component && typeof component.closest === 'function' ? component.closest('[data-landline-contact]') : null;
+  if (!container) return;
+  const config = landlineFieldConfig(container.dataset.landlineField);
+  if (!config) return;
+  const province = searchableSelectValue(component);
+  const prefix = LANDLINE_AREA_CODES[province] || '';
+  const input = container.querySelector('[data-landline-subscriber]');
+  const prefixDisplay = container.querySelector('[data-landline-prefix-display]');
+  container.dataset.landlinePrefix = prefix;
+  if (prefixDisplay) prefixDisplay.textContent = prefix ? faDigits(prefix) : '—';
+  if (input) {
+    input.disabled = !prefix;
+    input.value = prefix ? landlineSubscriberFromNumber(input.value, prefix) : '';
+  }
+  if (prefix) state.form[config.provinceField] = province;
+  else delete state.form[config.provinceField];
+  if (prefix && input && input.value) state.form[config.field] = `${faDigits(prefix)}${input.value}`;
+  else delete state.form[config.field];
+}
+
+function collectLandlineContactFields(data, scope = document) {
+  if (!scope || typeof scope.querySelectorAll !== 'function') return;
+  scope.querySelectorAll('[data-landline-contact]').forEach(container => {
+    const config = landlineFieldConfig(container.dataset.landlineField);
+    if (!config) return;
+    const picker = container.querySelector('[data-searchable-select]');
+    const province = searchableSelectValue(picker);
+    const prefix = LANDLINE_AREA_CODES[province] || '';
+    const input = container.querySelector('[data-landline-subscriber]');
+    const subscriber = input && prefix ? landlineSubscriberFromNumber(input.value, prefix) : '';
+    if (!prefix) {
+      delete data[config.provinceField];
+      delete data[config.field];
+      return;
+    }
+    data[config.provinceField] = province;
+    if (subscriber) data[config.field] = `${faDigits(prefix)}${subscriber}`;
+    else delete data[config.field];
+  });
+}
+
+function normalizeLandlinePhoneState(form = state.form) {
+  if (!isPlainRecord(form)) return;
+  LANDLINE_FIELD_CONFIGS.forEach(config => {
+    const rawPhone = typeof form[config.field] === 'string' ? form[config.field] : '';
+    const phone = landlineDigits(rawPhone);
+    if (phone) form[config.field] = phone;
+    else delete form[config.field];
+    const province = selectedLandlineProvince(config, form);
+    if (province) form[config.provinceField] = province;
+    else delete form[config.provinceField];
+  });
 }
 
 function vehiclePlateTemplateFor(templateId) {
@@ -1059,7 +1258,7 @@ function vehicleCardMarkup(vehicle, index, total) {
     <header class="vehicle-card-heading"><h3>${title}</h3>${removeButton}</header>
     <div class="vehicle-card-fields">
       ${searchableSelectMarkup(`vehicleKind-${index}`, 'وسیله نقلیه', VEHICLE_KIND_OPTIONS, { value: vehicle.kind || '', placeholder: 'خودرو یا موتورسیکلت را انتخاب کنید', className: 'vehicle-kind-select' })}
-      ${vehicleTextFieldMarkup(vehicle, 'type', 'نوع')}
+      ${vehicleTextFieldMarkup(vehicle, 'type', 'عنوان وسیله نقلیه')}
       ${vehicleTextFieldMarkup(vehicle, 'color', 'رنگ')}
       ${vehiclePlateField(vehicle, index)}
       ${vehicleTextFieldMarkup(vehicle, 'specialFeature', 'ویژگی خاص', { textarea: true, placeholder: 'تصادف، خوردگی رنگ و موارد بارز دیگر' })}
@@ -1444,6 +1643,7 @@ function hasMeaningfulFormValue() {
     }
     if (name === 'vehiclePlate' && isPlainRecord(value)) return Boolean(value.template);
     if (name === 'vehicles' && Array.isArray(value)) return value.some(vehicleRecordHasMeaningfulValue);
+    if (name === 'phoneFixedProvince' || name === 'phoneWorkProvince') return false;
     if (name === 'propertyPeople' && isPlainRecord(value)) {
       return Object.values(value).some(entries => Array.isArray(entries) && entries.some(propertyPersonRecordHasMeaningfulValue));
     }
@@ -1472,6 +1672,9 @@ function fieldValidationMessage(element) {
   if (element.dataset.validation === 'phone' && !/^\d{11}$/.test(digits)) {
     return `${label} باید دقیقاً ۱۱ رقم باشد.`;
   }
+  if (element.dataset.validation === 'landline' && !/^\d{8}$/.test(digits)) {
+    return `${label} باید ۸ رقم باشد؛ پیش‌شماره استان خودکار افزوده می‌شود.`;
+  }
   if (element.dataset.validation === 'age' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 1 || Number(digits) > 120)) {
     return `${label} باید عددی بین ۱ تا ۱۲۰ باشد.`;
   }
@@ -1484,8 +1687,14 @@ function fieldValidationMessage(element) {
   return '';
 }
 
-function validateVisibleFormFields() {
-  const invalid = Array.from(document.querySelectorAll('#formBody [data-validation], #incidentReportBody [data-validation], #propertyLocationFormBody [data-validation], #propertyVehiclesBody [data-validation], #propertySecurityBody [data-validation]'))
+function validateVisibleFormFields(scope = null) {
+  const activeScope = scope && typeof scope.querySelectorAll === 'function'
+    ? scope
+    : document.querySelector('.page.active');
+  const validationFields = activeScope
+    ? Array.from(activeScope.querySelectorAll('[data-validation]'))
+    : Array.from(document.querySelectorAll('[data-validation]'));
+  const invalid = validationFields
     .map(element => ({ element, message: fieldValidationMessage(element) }))
     .find(item => item.message);
 
@@ -1564,7 +1773,7 @@ function personForm() {
       `${field('height','قد','text',{numeric:true,maxLength:3,maxValue:250,validation:'height'})}${choices('bodyBuild','اندام',['لاغر','معمولی','چاق'],{columns:3})}${field('face','رنگ پوست','text',{textOnly:true})}${field('hairColor','رنگ مو','text',{textOnly:true})}${field('hairStatus','وضعیت موی سر','text',{textOnly:true})}${field('beard','محاسن','text',{textOnly:true})}${field('appearance','ویژگی خاص','textarea',{placeholder:'شامل زخم، تتو، معلولیت و موارد بارز دیگر'})}`,
       'ویژگی‌های ظاهری قابل مشاهده را ثبت کنید.'),
     formSection('پل‌های ارتباطی',
-      `${field('phoneMobile','شماره همراه','text',{numeric:true,maxLength:11,validation:'phone'})}${field('phoneFixed','شماره ثابت محل سکونت','text',{numeric:true,maxLength:11,validation:'phone'})}${field('homeAddress','نشانی محل سکونت','textarea')}${field('phoneWork','شماره ثابت محل کار','text',{numeric:true,maxLength:11,validation:'phone'})}${field('workAddress','نشانی محل کار','textarea')}${field('email','نشانی پست الکترونیک','email',{validation:'email',placeholder:'example@gmail.com',ltr:true})}${socialLinksField()}`,
+      `${field('phoneMobile','شماره همراه','text',{numeric:true,maxLength:11,validation:'phone'})}${landlineContactFieldMarkup('phoneFixed')}${field('homeAddress','نشانی محل سکونت','textarea')}${landlineContactFieldMarkup('phoneWork')}${field('workAddress','نشانی محل کار','textarea')}${field('email','نشانی پست الکترونیک','email',{validation:'email',placeholder:'example@gmail.com',ltr:true})}${socialLinksField()}`,
       'شماره‌های تماس و نشانی‌های مرتبط را وارد کنید.'),
     formSection('وسایل نقلیه',
       vehicleCollectionMarkup(),
@@ -1574,7 +1783,7 @@ function personForm() {
 
 function incidentReportSection() {
   return formSection('شرح و جزئیات وقوع',
-    `${field('crimeType','نوع جرم یا تخلف','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+    `${field('crimeType','نوع جرم یا تخلف','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع','textarea')}`,
     'جزئیات رخداد و نحوه اطلاع خود را ثبت کنید.');
 }
 
@@ -1594,10 +1803,12 @@ function renderIncidentReport() {
 }
 
 const PROPERTY_PERSON_ROLES = Object.freeze({
-  owner: Object.freeze({ title: 'مشخصات مالکین', singular: 'مالک', hasPropertyRoles: true }),
-  resident: Object.freeze({ title: 'ساکنین', singular: 'ساکن', hasPropertyRoles: false }),
-  visitor: Object.freeze({ title: 'ترددکنندگان', singular: 'ترددکننده', hasPropertyRoles: false })
+  owner: Object.freeze({ title: 'مشخصات مالکین', singular: 'مالک', hasPropertyRoles: true, pageId: 'propertyOwnersPage', bodyId: 'propertyOwnersBody' }),
+  resident: Object.freeze({ title: 'مشخصات ساکنین', singular: 'ساکن', hasPropertyRoles: false, pageId: 'propertyResidentsPage', bodyId: 'propertyResidentsBody' }),
+  visitor: Object.freeze({ title: 'مشخصات ترددکنندگان', singular: 'ترددکننده', hasPropertyRoles: false, pageId: 'propertyVisitorsPage', bodyId: 'propertyVisitorsBody' })
 });
+const PROPERTY_PERSON_STAGE_ORDER = Object.freeze(['owner', 'resident', 'visitor']);
+const PROPERTY_PERSON_PAGE_IDS = new Set(PROPERTY_PERSON_STAGE_ORDER.map(role => PROPERTY_PERSON_ROLES[role].pageId));
 const PROPERTY_PERSON_FIELD_KEYS = Object.freeze([
   'firstName', 'lastName', 'nickname', 'phone', 'gender', 'height', 'bodyBuild',
   'face', 'hairColor', 'hairStatus', 'beard', 'appearance'
@@ -1702,11 +1913,12 @@ function propertyPersonInputMarkup(person, key, label, type = 'text', options = 
   const validation = options.validation ? ` data-validation="${options.validation}"` : '';
   const numericRule = options.numeric ? ' data-numeric="true"' : '';
   const textRule = options.textOnly ? ' data-text-only="true"' : '';
+  const placeholder = options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : '';
   const attributes = `data-property-person-field="${key}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}`;
   if (type === 'textarea') {
-    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea${numeric}${textOnly}" ${attributes} data-auto-resize="true">${value}</textarea></div>`;
+    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea${numeric}${textOnly}" ${attributes}${placeholder} data-auto-resize="true">${value}</textarea></div>`;
   }
-  return `<div class="field-group"><label>${label}</label><input class="field-input${numeric}${textOnly}" ${attributes} type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}" value="${value}"></div>`;
+  return `<div class="field-group"><label>${label}</label><input class="field-input${numeric}${textOnly}" ${attributes}${placeholder} type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}" value="${value}"></div>`;
 }
 
 function propertyPersonChoicesMarkup(role, index, person, key, label, items) {
@@ -1746,7 +1958,7 @@ function propertyPersonPackageMarkup(role, person, index, total) {
       ${propertyPersonInputMarkup(person, 'hairColor', 'رنگ مو', 'text', { textOnly: true })}
       ${propertyPersonInputMarkup(person, 'hairStatus', 'وضعیت موی سر', 'text', { textOnly: true })}
       ${propertyPersonInputMarkup(person, 'beard', 'محاسن', 'text', { textOnly: true })}
-      ${propertyPersonInputMarkup(person, 'appearance', 'ویژگی خاص', 'textarea')}
+      ${propertyPersonInputMarkup(person, 'appearance', 'ویژگی خاص', 'textarea', { placeholder: 'شامل زخم، تتو، معلولیت و موارد بارز دیگر' })}
     </div>
   </article>`;
 }
@@ -1762,34 +1974,31 @@ function propertyPersonRoleSectionMarkup(role, people) {
   </section>`;
 }
 
-function renderPropertyLocationDetails() {
-  const body = document.getElementById('propertyLocationFormBody');
-  if (!body) return;
-  if (!isPropertyReport()) {
-    body.hidden = true;
-    body.innerHTML = '';
-    return;
-  }
-  const people = ensurePropertyPeople();
-  body.hidden = false;
-  body.innerHTML = `<section class="property-location-stage property-location-stage--details" aria-labelledby="propertyLocationDetailsTitle">
-    <header class="property-location-stage-heading">
-      <span class="property-location-stage-count">بخش ۱ از ۳</span>
-      <h2 id="propertyLocationDetailsTitle">مشخصات و محل ملک</h2>
-      <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
-    </header>
-    <div class="property-location-stage-body" data-property-location-form>${Object.keys(PROPERTY_PERSON_ROLES).map(role => propertyPersonRoleSectionMarkup(role, people)).join('')}</div>
-  </section>`;
+function propertyPersonRoleForPage(pageId) {
+  return PROPERTY_PERSON_STAGE_ORDER.find(role => PROPERTY_PERSON_ROLES[role].pageId === pageId) || '';
 }
 
-function collectPropertyPeopleDetails() {
-  const body = document.getElementById('propertyLocationFormBody');
-  if (!isPropertyReport() || !body || body.hidden) return;
+function propertyPersonBody(role) {
+  const config = PROPERTY_PERSON_ROLES[role];
+  return config ? document.getElementById(config.bodyId) : null;
+}
+
+function renderPropertyPersonPage(role) {
+  const body = propertyPersonBody(role);
+  if (!body || !isPropertyReport() || !PROPERTY_PERSON_ROLES[role]) return;
+  const people = ensurePropertyPeople();
+  body.innerHTML = propertyPersonRoleSectionMarkup(role, people);
+  body.querySelectorAll('textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+}
+
+function collectPropertyPeopleDetails(role = propertyPersonRoleForPage(activePageId())) {
+  if (!isPropertyReport() || !PROPERTY_PERSON_ROLES[role]) return;
+  const body = propertyPersonBody(role);
+  if (!body) return;
   const people = ensurePropertyPeople();
   body.querySelectorAll('[data-property-person-package]').forEach(card => {
-    const role = card.dataset.propertyPersonRole;
     const index = Number(card.dataset.propertyPersonIndex);
-    if (!PROPERTY_PERSON_ROLES[role] || !Number.isInteger(index) || index < 0) return;
+    if (!Number.isInteger(index) || index < 0) return;
     const person = {};
     card.querySelectorAll('[data-property-person-field]').forEach(input => {
       const key = input.dataset.propertyPersonField;
@@ -1804,9 +2013,7 @@ function collectPropertyPeopleDetails() {
     if (role === 'owner') {
       card.querySelectorAll('[data-property-person-checkbox]').forEach(checkbox => {
         const key = checkbox.dataset.propertyPersonCheckbox;
-        if (key === 'isResident' || key === 'isVisitor') {
-          if (checkbox.checked) person[key] = true;
-        }
+        if ((key === 'isResident' || key === 'isVisitor') && checkbox.checked) person[key] = true;
       });
     }
     if (!Array.isArray(people[role])) people[role] = [];
@@ -1817,7 +2024,7 @@ function collectPropertyPeopleDetails() {
 
 function pickPropertyPersonChoice(button, role, index, key, value) {
   if (!PROPERTY_PERSON_ROLES[role] || !PROPERTY_PERSON_FIELD_KEYS.includes(key)) return;
-  collectPropertyPeopleDetails();
+  collectPropertyPeopleDetails(role);
   const people = ensurePropertyPeople();
   const person = people[role][index];
   if (!person) return;
@@ -1830,24 +2037,59 @@ function pickPropertyPersonChoice(button, role, index, key, value) {
 
 function addPropertyPerson(role) {
   if (!PROPERTY_PERSON_ROLES[role]) return;
-  collectPropertyPeopleDetails();
+  collectPropertyPeopleDetails(role);
   const people = ensurePropertyPeople();
   if (people[role].length >= MAX_PROPERTY_PEOPLE) return;
   people[role].push({});
-  renderPropertyLocationDetails();
+  renderPropertyPersonPage(role);
   persistReportDraft();
 }
 
 function removePropertyPerson(role, index) {
   if (!PROPERTY_PERSON_ROLES[role]) return;
-  collectPropertyPeopleDetails();
+  collectPropertyPeopleDetails(role);
   const people = ensurePropertyPeople();
   if (!Number.isInteger(index) || index < 0 || index >= people[role].length) return;
   people[role].splice(index, 1);
   if (!people[role].length) people[role].push({});
-  renderPropertyLocationDetails();
+  renderPropertyPersonPage(role);
   persistReportDraft();
 }
+
+function openPropertyPeoplePage(role) {
+  const config = PROPERTY_PERSON_ROLES[role];
+  if (!isPropertyReport() || !config) return openLocation();
+  renderPropertyPersonPage(role);
+  showPage(config.pageId);
+}
+
+function continuePropertyPeoplePage(role) {
+  const body = propertyPersonBody(role);
+  collectPropertyPeopleDetails(role);
+  if (!validateVisibleFormFields(body)) return;
+  const currentIndex = PROPERTY_PERSON_STAGE_ORDER.indexOf(role);
+  const nextRole = PROPERTY_PERSON_STAGE_ORDER[currentIndex + 1];
+  if (nextRole) return openPropertyPeoplePage(nextRole);
+  openPropertyVehicles();
+}
+
+function backFromPropertyPeoplePage(role) {
+  collectPropertyPeopleDetails(role);
+  const currentIndex = PROPERTY_PERSON_STAGE_ORDER.indexOf(role);
+  const previousRole = PROPERTY_PERSON_STAGE_ORDER[currentIndex - 1];
+  if (previousRole) return openPropertyPeoplePage(previousRole);
+  openLocation();
+}
+
+function openPropertyOwners() { return openPropertyPeoplePage('owner'); }
+function continuePropertyOwners() { return continuePropertyPeoplePage('owner'); }
+function backFromPropertyOwners() { return backFromPropertyPeoplePage('owner'); }
+function openPropertyResidents() { return openPropertyPeoplePage('resident'); }
+function continuePropertyResidents() { return continuePropertyPeoplePage('resident'); }
+function backFromPropertyResidents() { return backFromPropertyPeoplePage('resident'); }
+function openPropertyVisitors() { return openPropertyPeoplePage('visitor'); }
+function continuePropertyVisitors() { return continuePropertyPeoplePage('visitor'); }
+function backFromPropertyVisitors() { return backFromPropertyPeoplePage('visitor'); }
 
 function renderPropertyVehicles() {
   const body = document.getElementById('propertyVehiclesBody');
@@ -1873,14 +2115,15 @@ function openPropertyVehicles() {
 }
 
 function continuePropertyVehicles() {
+  const body = document.getElementById('propertyVehiclesBody');
   collectPropertyVehicleDetails();
-  if (!validateVisibleFormFields()) return;
+  if (!validateVisibleFormFields(body)) return;
   openPropertySecurity();
 }
 
 function backFromPropertyVehicles() {
   collectPropertyVehicleDetails();
-  openLocation();
+  openPropertyVisitors();
 }
 
 function renderPropertySecurity() {
@@ -1911,8 +2154,9 @@ function openPropertySecurity() {
 }
 
 function continuePropertySecurity() {
+  const body = document.getElementById('propertySecurityBody');
   collectPropertySecurityDetails();
-  if (!validateVisibleFormFields()) return;
+  if (!validateVisibleFormFields(body)) return;
   openTime();
 }
 
@@ -1924,7 +2168,7 @@ function backFromPropertySecurity() {
 function propertyForm() {
   return [
     formSection('شرح و جزئیات وقوع',
-      `${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      `${field('suspicionReason','دلایل مشکوک بودن ملک','textarea')}${field('source','نحوه اطلاع','textarea')}`,
       'دلیل گزارش و نحوه اطلاع خود را ثبت کنید.')
   ];
 }
@@ -1936,17 +2180,17 @@ function objectForm(subtype) {
         `${field('objectType','نوع شیء مشکوک')}${choices('packageType','نوع بسته‌بندی',['پلمپ','چسب','عادی','نامشخص'])}${field('specialSigns','علائم خاص و ویژه','textarea')}`,
         'مشخصات قابل مشاهده بسته یا شیء را وارد کنید.'),
       formSection('محل و علت گزارش',
-        `${field('packageAddress','آدرس محل قرارگیری','textarea')}${field('suspicionReason','علت مشکوک بودن بسته','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        `${field('packageAddress','آدرس محل قرارگیری','textarea')}${field('suspicionReason','علت مشکوک بودن بسته','textarea')}${field('source','نحوه اطلاع','textarea')}`,
         'محل قرارگیری، علت گزارش و نحوه اطلاع خود را ثبت کنید.')
     ];
   }
   if (subtype === 'خودرو مشکوک') {
     return [
       formSection('مشخصات خودرو',
-        `${field('vehicleType','نوع خودرو')}${field('vehicleColor','رنگ')}${field('vehiclePlate','پلاک')}`,
+        `${field('vehicleType','عنوان وسیله نقلیه')}${field('vehicleColor','رنگ')}${field('vehiclePlate','پلاک')}`,
         'مشخصات ظاهری و پلاک خودرو را وارد کنید.'),
       formSection('مشاهده و گزارش',
-        `${field('vehicleAddress','محل مشاهده','textarea')}${field('vehicleReason','علت مشکوک بودن خودرو','textarea')}${field('riderAppearance','مشخصات ظاهری راکب','textarea')}${field('vehicleTime','ساعت مشاهده، توقف یا تردد','text')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        `${field('vehicleAddress','محل مشاهده','textarea')}${field('vehicleReason','علت مشکوک بودن خودرو','textarea')}${field('riderAppearance','مشخصات ظاهری راکب','textarea')}${field('vehicleTime','ساعت مشاهده، توقف یا تردد','text')}${field('source','نحوه اطلاع','textarea')}`,
         'جزئیات مشاهده خودرو و نحوه اطلاع خود را ثبت کنید.')
     ];
   }
@@ -1966,7 +2210,7 @@ function objectForm(subtype) {
         `${field('goodsType','نوع کالا')}${field('goodsBrand','برند یا سازنده')}${field('goodsModel','مدل یا مشخصات')}${field('goodsQuantity','تعداد','text',{numeric:true})}${field('goodsPackaging','نوع بسته‌بندی')}`,
         'مشخصات اصلی کالا را وارد کنید.'),
       formSection('مبدأ، مقصد و گزارش',
-        `${field('goodsOrigin','مبدأ یا محل تهیه')}${field('goodsDestination','مقصد یا محل نگهداری','textarea')}${field('goodsReason','علت اهمیت یا مشکوک بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        `${field('goodsOrigin','مبدأ یا محل تهیه')}${field('goodsDestination','مقصد یا محل نگهداری','textarea')}${field('goodsReason','علت اهمیت یا مشکوک بودن','textarea')}${field('source','نحوه اطلاع','textarea')}`,
         'مسیر کالا، علت گزارش و نحوه اطلاع خود را ثبت کنید.')
     ];
   }
@@ -1975,7 +2219,7 @@ function objectForm(subtype) {
       `${field('starlinkAddress','آدرس محل نصب آنتن','textarea')}${field('starlinkOwners','مشخصات صاحبان و استفاده‌کنندگان','textarea')}${field('starlinkAppearance','مشخصات ظاهری آنتن','textarea')}`,
       'محل نصب و مشخصات قابل مشاهده آنتن را وارد کنید.'),
     formSection('علت استفاده و منبع',
-      `${field('starlinkReason','علت استفاده','textarea')}${field('source','نحوه اطلاع منبع','textarea')}${field('sourceRelation','زمان و نحوه آشنایی منبع با موضوع','textarea')}`,
+      `${field('starlinkReason','علت استفاده','textarea')}${field('source','نحوه اطلاع','textarea')}${field('sourceRelation','زمان و نحوه آشنایی منبع با موضوع','textarea')}`,
       'علت استفاده و نحوه اطلاع یا آشنایی خود با موضوع را ثبت کنید.')
   ];
 }
@@ -1990,7 +2234,7 @@ function phenomenonForm(subtype) {
         `${field('participantActions','اقدامات شرکت‌کنندگان','textarea')}${field('signsSlogans','دستنوشته‌ها، شعارها و خواسته‌ها','textarea')}${field('leaders','مشخصات لیدرها','textarea')}${field('futureActions','اقدامات احتمالی آینده','textarea')}${field('formation','نحوه شکل‌گیری پدیده','textarea')}${yesNo('history','سابقه قبلی پدیده')}`,
         'روند شکل‌گیری، وضعیت فعلی و اقدامات احتمالی را شرح دهید.'),
       formSection('اطلاع‌رسانی و منبع',
-        `${field('callMethod','نحوه فراخوان و اطلاع‌رسانی','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+        `${field('callMethod','نحوه فراخوان و اطلاع‌رسانی','textarea')}${field('source','نحوه اطلاع','textarea')}`,
         'روش اطلاع‌رسانی و نحوه اطلاع خود را ثبت کنید.')
     ];
   }
@@ -1999,7 +2243,7 @@ function phenomenonForm(subtype) {
       `${field('eventAddress','آدرس و محل رخداد','textarea')}${field('importance','اهمیت مکان مورد تهدید','textarea')}${field('damage','خسارت‌های جانی و مالی و تخریب','textarea')}`,
       'محل رخداد و خسارت‌های واردشده را ثبت کنید.'),
     formSection('عوامل و نحوه وقوع',
-      `${field('suspects','مشخصات مظنونین احتمالی','textarea')}${field('responders','حضور یا عدم حضور نیروهای خدماتی و مأمورین','textarea')}${field('eventCause','نحوه وقوع و چگونگی آغاز و گسترش','textarea')}${field('intent','انگیزه یا عامل احتمالی در صورت عمدی بودن','textarea')}${field('source','نحوه اطلاع منبع','textarea')}`,
+      `${field('suspects','مشخصات مظنونین احتمالی','textarea')}${field('responders','حضور یا عدم حضور نیروهای خدماتی و مأمورین','textarea')}${field('eventCause','نحوه وقوع و چگونگی آغاز و گسترش','textarea')}${field('intent','انگیزه یا عامل احتمالی در صورت عمدی بودن','textarea')}${field('source','نحوه اطلاع','textarea')}`,
       'عوامل احتمالی، نحوه رخداد و منبع اطلاع را وارد کنید.')
   ];
 }
@@ -2049,6 +2293,7 @@ function collectForm() {
     if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
     else delete data[row.dataset.choice];
   });
+  collectLandlineContactFields(data, document.getElementById('formBody'));
   collectSocialLinks(data);
   const vehicleScope = isPropertyReport()
     ? document.getElementById('propertyVehiclesBody')
@@ -2247,8 +2492,11 @@ function renderLocationFields() {
     ${searchableSelectMarkup('locationCounty', 'شهرستان مکان وقوع', counties, { inputId: 'city', value: city, placeholder: province ? 'شهرستان را انتخاب کنید' : 'ابتدا استان را انتخاب کنید', disabled: !province })}
   </div>` : '';
   const detailsFields = unknown ? '' : locationDetailsMarkup();
+  const peopleUnknownGuidance = unknown && state.category === 'افراد'
+    ? '<p class="location-unknown-guidance">حداقل استان و شهرستان محل وقوع را وارد کنید.</p>'
+    : '';
 
-  box.innerHTML = `${regionFields}${detailsFields}`;
+  box.innerHTML = `${peopleUnknownGuidance}${regionFields}${detailsFields}`;
   box.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
   box.querySelectorAll('input, textarea').forEach(normalizeFieldValue);
 }
@@ -2395,7 +2643,6 @@ function openLocation() {
   const mode = allowedLocationModes().includes(state.location.mode) ? state.location.mode : '';
   setLocationModeVisual(mode);
   renderLocationFields();
-  renderPropertyLocationDetails();
   const continueButton = document.getElementById('locationContinueButton');
   if (continueButton) continueButton.textContent = isPropertyReport() ? 'مرحله بعد' : 'تایید مکان وقوع';
   const status = document.getElementById('locationStatus');
@@ -2419,6 +2666,9 @@ function continueLocation() {
   const mode = state.location.mode;
   if (!allowedLocationModes().includes(mode)) return alert('روش تعیین مکان وقوع را انتخاب کنید.');
   if (mode === 'unknown') {
+    if (state.category === 'افراد' && (!state.location.province || !state.location.city)) {
+      return alert('حداقل استان و شهرستان محل وقوع را وارد کنید.');
+    }
     if (!state.location.province) return alert('استان مکان وقوع را انتخاب کنید.');
     if (!state.location.city) return alert('شهرستان مکان وقوع را انتخاب کنید.');
     state.location.known = false;
@@ -2433,11 +2683,7 @@ function continueLocation() {
     delete state.location.city;
   }
   if (state.category === 'افراد') return openIncidentReport();
-  if (state.category === 'املاک') {
-    collectPropertyPeopleDetails();
-    if (!validateVisibleFormFields()) return;
-    return openPropertyVehicles();
-  }
+  if (state.category === 'املاک') return openPropertyOwners();
   openDocuments();
 }
 

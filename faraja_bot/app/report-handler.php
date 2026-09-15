@@ -35,6 +35,101 @@ function formValue(array $form, string $key): ?string {
   return $value === '' ? null : $value;
 }
 
+function landlineAreaCodes(): array {
+  // Every fixed-line number uses its provincial three-digit prefix followed by
+  // an eight-digit subscriber number.
+  return [
+    'آذربایجان شرقی' => '041',
+    'آذربایجان غربی' => '044',
+    'اردبیل' => '045',
+    'اصفهان' => '031',
+    'البرز' => '026',
+    'ایلام' => '084',
+    'بوشهر' => '077',
+    'تهران' => '021',
+    'چهارمحال و بختیاری' => '038',
+    'خراسان جنوبی' => '056',
+    'خراسان رضوی' => '051',
+    'خراسان شمالی' => '058',
+    'خوزستان' => '061',
+    'زنجان' => '024',
+    'سمنان' => '023',
+    'سیستان و بلوچستان' => '054',
+    'فارس' => '071',
+    'قزوین' => '028',
+    'قم' => '025',
+    'کردستان' => '087',
+    'کرمان' => '034',
+    'کرمانشاه' => '083',
+    'کهگیلویه و بویراحمد' => '074',
+    'گلستان' => '017',
+    'گیلان' => '013',
+    'لرستان' => '066',
+    'مازندران' => '011',
+    'مرکزی' => '086',
+    'هرمزگان' => '076',
+    'همدان' => '081',
+    'یزد' => '035'
+  ];
+}
+
+function normalizePeopleLandlineField(array &$form, string $field, string $provinceField, string $label): void {
+  $areaCodes = landlineAreaCodes();
+  if (array_key_exists($provinceField, $form) && !is_scalar($form[$provinceField])) {
+    throw new InvalidArgumentException('استان ' . $label . ' نامعتبر است.');
+  }
+  $province = formValue($form, $provinceField);
+  if ($province === null) unset($form[$provinceField]);
+  elseif (!array_key_exists($province, $areaCodes)) {
+    throw new InvalidArgumentException('استان ' . $label . ' نامعتبر است.');
+  }
+
+  if (array_key_exists($field, $form) && !is_scalar($form[$field])) {
+    throw new InvalidArgumentException($label . ' نامعتبر است.');
+  }
+  $phone = formValue($form, $field);
+  if ($phone === null) {
+    unset($form[$field]);
+    return;
+  }
+
+  $digits = englishDigits($phone);
+  if (!preg_match('/^\d{8}$|^\d{11}$/', $digits)) {
+    throw new InvalidArgumentException($label . ' باید شامل ۸ رقم شماره یا ۱۱ رقم کامل باشد.');
+  }
+
+  $inferredProvince = null;
+  if (strlen($digits) === 11) {
+    $prefix = substr($digits, 0, 3);
+    foreach ($areaCodes as $candidateProvince => $candidatePrefix) {
+      if ($candidatePrefix === $prefix) {
+        $inferredProvince = $candidateProvince;
+        break;
+      }
+    }
+  }
+
+  if ($province === null) $province = $inferredProvince;
+  if ($province === null) {
+    throw new InvalidArgumentException('برای ' . $label . ' استان را انتخاب کنید.');
+  }
+
+  // A province explicitly chosen in the UI always controls the persisted
+  // prefix. This also upgrades old full numbers by inferring their province.
+  $subscriber = strlen($digits) === 11 ? substr($digits, -8) : $digits;
+  $form[$provinceField] = $province;
+  $form[$field] = $areaCodes[$province] . $subscriber;
+}
+
+function normalizePeopleLandlines(array &$form, string $category): void {
+  if ($category !== 'افراد') {
+    unset($form['phoneFixedProvince'], $form['phoneWorkProvince']);
+    return;
+  }
+  normalizePeopleLandlineField($form, 'phoneFixed', 'phoneFixedProvince', 'شماره ثابت محل سکونت');
+  normalizePeopleLandlineField($form, 'phoneWork', 'phoneWorkProvince', 'شماره ثابت محل کار');
+}
+
 function validNationalId(string $value): bool {
   $digits = englishDigits($value);
   if (!preg_match('/^\d{10}$/', $digits) || preg_match('/^(\d)\1{9}$/', $digits)) return false;
@@ -134,6 +229,8 @@ function propertyPeopleHaveMeaningfulValue(array $people): bool {
 
 function formHasMeaningfulValue(array $form): bool {
   foreach ($form as $key => $value) {
+    // Province selection is auxiliary UI state. By itself it is not report data.
+    if (in_array($key, ['phoneFixedProvince', 'phoneWorkProvince'], true)) continue;
     if (is_scalar($value) && trim((string)$value) !== '') return true;
     if ($key === 'socialLinks' && is_array($value) && count($value) > 0) return true;
     if ($key === 'vehiclePlate' && is_array($value) && !empty($value['template'])) return true;
@@ -372,6 +469,7 @@ function normalize(array $input): array {
     $form['crimeDate']
   );
   if ($category === 'املاک') normalizePropertyFields($form);
+  normalizePeopleLandlines($form, $category);
   normalizeSocialLinks($form);
   if (!formHasMeaningfulValue($form)) {
     throw new InvalidArgumentException('اطلاعات گزارش وارد نشده است.');

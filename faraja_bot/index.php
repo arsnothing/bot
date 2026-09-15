@@ -154,9 +154,56 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div id="mapWrap" class="map-wrap"><div id="reportMap"></div></div>
     <div id="locationFields" class="location-fields"></div>
-    <div id="propertyLocationFormBody" class="property-location-form-body" hidden></div>
     <div id="locationStatus" class="status" aria-live="polite"></div>
     <button id="locationContinueButton" class="primary-button page-action" onclick="continueLocation()" type="button">تایید مکان وقوع</button>
+  </main>
+</section>
+
+<section id="propertyOwnersPage" class="page">
+  <main class="shell form-shell">
+    <button class="back-button button-with-icon" onclick="backFromPropertyOwners()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
+    <section class="property-location-stage" aria-label="مشخصات مالکین">
+      <header class="property-location-stage-heading">
+        <span class="property-location-stage-count">بخش ۲ از ۶</span>
+        <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
+      </header>
+      <div id="propertyOwnersBody" class="property-location-stage-body"></div>
+    </section>
+    <button class="primary-button page-action" onclick="continuePropertyOwners()" type="button">مرحله بعد</button>
+  </main>
+</section>
+
+<section id="propertyResidentsPage" class="page">
+  <main class="shell form-shell">
+    <button class="back-button button-with-icon" onclick="backFromPropertyResidents()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
+    <section class="property-location-stage" aria-label="مشخصات ساکنین">
+      <header class="property-location-stage-heading">
+        <span class="property-location-stage-count">بخش ۳ از ۶</span>
+        <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
+      </header>
+      <div id="propertyResidentsBody" class="property-location-stage-body"></div>
+    </section>
+    <button class="primary-button page-action" onclick="continuePropertyResidents()" type="button">مرحله بعد</button>
+  </main>
+</section>
+
+<section id="propertyVisitorsPage" class="page">
+  <main class="shell form-shell">
+    <button class="back-button button-with-icon" onclick="backFromPropertyVisitors()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
+    <div class="stepper report-stepper" data-report-roadmap data-standard-step="2" data-people-step="2" data-property-step="0" aria-label="مراحل ثبت گزارش"></div>
+    <div class="page-head"><h1>مشخصات و محل ملک</h1></div>
+    <section class="property-location-stage" aria-label="مشخصات ترددکنندگان">
+      <header class="property-location-stage-heading">
+        <span class="property-location-stage-count">بخش ۴ از ۶</span>
+        <p>مشخصات افراد مرتبط با ملک را در بسته‌های جداگانه وارد کنید.</p>
+      </header>
+      <div id="propertyVisitorsBody" class="property-location-stage-body"></div>
+    </section>
+    <button class="primary-button page-action" onclick="continuePropertyVisitors()" type="button">مرحله بعد</button>
   </main>
 </section>
 
@@ -167,7 +214,7 @@ require __DIR__ . '/includes/header.php';
     <div class="page-head"><h1>مکان وقوع</h1></div>
     <section class="property-location-stage" aria-labelledby="propertyVehiclesStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۲ از ۳</span>
+        <span class="property-location-stage-count">بخش ۵ از ۶</span>
         <h2 id="propertyVehiclesStageTitle">اطلاعات خودرو یا موتورسیکلت</h2>
         <p>برای هر خودرو یا موتورسیکلت، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.</p>
       </header>
@@ -184,7 +231,7 @@ require __DIR__ . '/includes/header.php';
     <div class="page-head"><h1>مکان وقوع</h1></div>
     <section class="property-location-stage" aria-labelledby="propertySecurityStageTitle">
       <header class="property-location-stage-heading">
-        <span class="property-location-stage-count">بخش ۳ از ۳</span>
+        <span class="property-location-stage-count">بخش ۶ از ۶</span>
         <h2 id="propertySecurityStageTitle">اقدامات حفاظتی ملک</h2>
         <p>وضعیت حفاظت و مراقبتی ملک را شرح دهید.</p>
       </header>
