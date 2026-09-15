@@ -1436,11 +1436,25 @@ html,body{background:var(--bg);color:var(--text)}
 [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready i.done{
   background:#9bbda7;
 }
-/* مسیرهای جزئی افراد و املاک عمداً آرام‌ترند تا تغییر هر مرحله خوانا بماند. */
+/* املاک و افراد از یک مؤلفهٔ رودمپ استفاده می‌کنند؛ فقط برچسب‌ها و مرحلهٔ فعال متفاوت است. */
+[data-report-roadmap].report-stepper--people{
+  margin:3px 0 16px;
+}
 [data-report-roadmap].report-stepper--people span{
+  background:#eef2ef;
+  color:#77817b;
   transition-duration:.62s;
 }
+[data-report-roadmap].report-stepper--people span.active{
+  background:var(--green);
+  color:#fff;
+}
+[data-report-roadmap].report-stepper--people span.done{
+  background:var(--green-soft);
+  color:var(--green);
+}
 [data-report-roadmap].report-stepper--people i{
+  background:#dce4df;
   transition-duration:.62s;
 }
 [data-report-roadmap].report-stepper--people.roadmap-ready span.active{
@@ -1812,11 +1826,6 @@ html,body{background:var(--bg);color:var(--text)}
   font-size:22px;
   font-weight:900;
 }
-:is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .stepper{margin:3px 0 16px}
-:is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .stepper span{background:#eef2ef;color:#77817b}
-:is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .stepper span.active{background:var(--green);color:#fff}
-:is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .stepper span.done{background:var(--green-soft);color:var(--green)}
-:is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .stepper i{background:var(--border)}
 :is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .field-group label{color:#34443b}
 :is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .field-input,
 :is(#propertyOwnersPage,#propertyResidentsPage,#propertyVisitorsPage,#propertyVehiclesPage,#propertySecurityPage) .field-textarea{

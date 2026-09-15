@@ -170,10 +170,10 @@ function renderReportRoadmaps() {
 
   document.querySelectorAll('[data-report-roadmap]').forEach(stepper => {
     const activeStep = Number(stepper.dataset[stepAttribute]);
-    // Properties intentionally use the same compact, slower roadmap presentation
-    // as people reports, with their own four requested labels and stage order.
+    // Property pages reuse the exact people-roadmap component. Their labels and
+    // active index remain category-specific, with no property-only visual class.
     stepper.classList.toggle('report-stepper--people', usesDetailedRoadmapPresentation);
-    stepper.classList.toggle('report-stepper--property', isPropertyReport);
+    stepper.classList.remove('report-stepper--property');
     stepper.classList.toggle('report-stepper--standard', !usesDetailedRoadmapPresentation);
     stepper.classList.remove('roadmap-ready');
 
