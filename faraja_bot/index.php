@@ -26,12 +26,10 @@ require __DIR__ . '/includes/header.php';
     </section>
 
     <div class="home-buttons">
-      <button class="main-card button-with-icon" onclick="startReport()" type="button">
-        <?= buttonIcon('report', 'button-icon main-icon') ?>
+      <button class="main-card" onclick="startReport()" type="button">
         <strong>ثبت گزارش</strong>
       </button>
-      <button class="main-card secondary-main-card button-with-icon" onclick="openLocationRegistration()" type="button">
-        <?= buttonIcon('pin', 'button-icon main-icon') ?>
+      <button class="main-card secondary-main-card" onclick="openLocationRegistration()" type="button">
         <strong>ثبت موقعیت مکانی</strong>
       </button>
     </div>
@@ -44,13 +42,12 @@ require __DIR__ . '/includes/header.php';
     <section class="construction-card" aria-labelledby="constructionTitle">
       <div class="construction-visual" aria-hidden="true">
         <div class="construction-glow"></div>
+        <div class="construction-ground"></div>
         <div class="construction-building">
           <span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
-        <div class="construction-block construction-block-one"></div>
-        <div class="construction-block construction-block-two"></div>
-        <?= buttonIcon('gear', 'construction-gear construction-gear-large') ?>
-        <?= buttonIcon('gear', 'construction-gear construction-gear-small') ?>
+        <?= buttonIcon('gear', 'construction-gear construction-gear-primary') ?>
+        <?= buttonIcon('gear', 'construction-gear construction-gear-secondary') ?>
       </div>
       <p id="constructionStatus" class="construction-status" aria-live="polite"><span></span>در حال آماده‌سازی</p>
       <h1 id="constructionTitle">ثبت موقعیت مکانی<br>در حال ساخت است</h1>

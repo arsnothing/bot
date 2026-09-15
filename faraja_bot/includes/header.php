@@ -89,9 +89,10 @@ function buttonIcon(string $name, string $class = 'button-icon'): string {
     <symbol id="icon-pin-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M17.5 10.25c0 4.35-5.5 9.5-5.5 9.5s-5.5-5.15-5.5-9.5a5.5 5.5 0 1 1 11 0Z"/><circle cx="12" cy="10.25" r="1.75"/><path d="m4 4 16 16"/>
     </symbol>
-    <symbol id="icon-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.1M12 18.9V21M21 12h-2.1M5.1 12H3M18.36 5.64l-1.48 1.48M7.12 16.88l-1.48 1.48M18.36 18.36l-1.48-1.48M7.12 7.12 5.64 5.64"/>
-      <path d="m16.55 7.45 1.55-.55 1.1 1.9-1.15 1.15c.1.4.15.8.15 1.2s-.05.8-.15 1.2l1.15 1.15-1.1 1.9-1.55-.55c-.32.28-.68.48-1.08.64L15.15 17h-2.3l-.32-1.65a5.5 5.5 0 0 1-1.08-.64l-1.55.55-1.1-1.9 1.15-1.15a4.7 4.7 0 0 1 0-2.4L8.8 8.65l1.1-1.9 1.55.55c.32-.28.68-.48 1.08-.64L12.85 5h2.3l.32 1.66c.4.16.76.36 1.08.64Z"/>
+    <symbol id="icon-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.47 4.20 9.83 1.78h4.34l.36 2.42 1.19.49 1.97-1.45 3.07 3.07-1.45 1.97.49 1.19 2.42.36v4.34l-2.42.36-.49 1.19 1.45 1.97-3.07 3.07-1.97-1.45-1.19.49-.36 2.42H9.83l-.36-2.42-1.19-.49-1.97 1.45-3.07-3.07 1.45-1.97-.49-1.19-2.42-.36V9.83l2.42-.36.49-1.19-1.45-1.97 3.07-3.07 1.97 1.45 1.19-.49Z"/>
+      <circle cx="12" cy="12" r="3.15"/>
+      <path d="M12 8.85V5.2M15.15 12h3.65M12 15.15v3.65M8.85 12H5.2"/>
     </symbol>
     <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="m5 12.5 4.25 4.25L19 7.25"/>

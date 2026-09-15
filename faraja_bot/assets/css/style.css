@@ -650,45 +650,58 @@ html,body{background:var(--bg);color:var(--text)}
 .construction-card::after{bottom:-102px;left:-70px}
 .construction-visual{
   position:relative;
+  isolation:isolate;
   width:min(100%,260px);
   height:198px;
   margin:0 auto 5px;
 }
+.construction-ground{
+  position:absolute;
+  right:8px;
+  bottom:14px;
+  left:8px;
+  z-index:0;
+  height:4px;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,#bfd8c7 12%,#9bbda7 88%,transparent);
+}
 .construction-glow{
   position:absolute;
   right:50%;
-  bottom:9px;
-  width:180px;
+  bottom:14px;
+  z-index:0;
+  width:188px;
   height:54px;
   border-radius:50%;
-  background:rgba(181,214,192,.58);
+  background:rgba(181,214,192,.52);
   filter:blur(17px);
   transform:translateX(50%);
   animation:construction-glow 2.4s ease-in-out infinite alternate;
 }
 .construction-building{
   position:absolute;
+  right:4px;
   bottom:18px;
-  right:50%;
+  z-index:3;
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:9px;
-  width:106px;
-  height:111px;
-  padding:25px 17px 15px;
+  gap:8px;
+  width:105px;
+  height:108px;
+  padding:25px 17px 14px;
   border:2px solid #2f604c;
   border-bottom-width:5px;
   border-radius:13px 13px 7px 7px;
-  background:linear-gradient(160deg,#f7fcf8,#dfefe4);
+  background:linear-gradient(160deg,#f8fcf9,#dfefe4);
   box-shadow:inset 0 0 0 6px rgba(255,255,255,.55),0 11px 20px rgba(36,75,59,.12);
-  transform:translateX(50%);
-  animation:construction-rise 2.6s ease-in-out infinite alternate;
+  transform-origin:center bottom;
+  animation:construction-rise 2.8s ease-in-out infinite alternate;
 }
 .construction-building::before{
   position:absolute;
   top:-14px;
-  right:11px;
-  width:79px;
+  right:10px;
+  width:78px;
   height:18px;
   border:2px solid #2f604c;
   border-bottom:0;
@@ -708,40 +721,29 @@ html,body{background:var(--bg);color:var(--text)}
 .construction-building span:nth-child(5){animation-delay:.35s}
 .construction-building span:nth-child(3),
 .construction-building span:nth-child(6){animation-delay:.7s}
-.construction-block{
-  position:absolute;
-  bottom:17px;
-  width:27px;
-  height:27px;
-  border:2px solid #47765b;
-  border-radius:6px;
-  background:#c7e0d0;
-  box-shadow:0 6px 12px rgba(36,75,59,.1);
-  animation:construction-block 2.2s ease-in-out infinite;
-}
-.construction-block-one{right:24px;animation-delay:-.7s}
-.construction-block-two{right:51px;bottom:46px;animation-delay:-1.25s}
 .construction-gear{
   position:absolute;
   z-index:2;
   display:block;
+  width:74px;
+  height:74px;
   color:#2f604c;
-  filter:drop-shadow(0 7px 8px rgba(36,75,59,.12));
+  filter:drop-shadow(0 6px 7px rgba(36,75,59,.12));
+  transform-box:view-box;
+  transform-origin:50% 50%;
+  will-change:transform;
+  shape-rendering:geometricPrecision;
 }
-.construction-gear-large{
-  bottom:0;
-  left:10px;
-  width:88px;
-  height:88px;
-  animation:construction-spin 7s linear infinite;
+.construction-gear-primary{
+  bottom:15px;
+  left:12px;
+  animation:construction-gear-clockwise 6.8s linear infinite;
 }
-.construction-gear-small{
-  right:2px;
-  bottom:54px;
-  width:57px;
-  height:57px;
-  color:#6e9d7d;
-  animation:construction-spin-reverse 4.2s linear infinite;
+.construction-gear-secondary{
+  bottom:15px;
+  left:76px;
+  color:#568467;
+  animation:construction-gear-counterclockwise 6.8s linear infinite;
 }
 .construction-status{
   display:inline-flex;
@@ -799,12 +801,11 @@ html,body{background:var(--bg);color:var(--text)}
   background:linear-gradient(90deg,#72a887,#244b3b,#72a887);
   animation:construction-progress 2.4s ease-in-out infinite;
 }
-@keyframes construction-spin{to{transform:rotate(360deg)}}
-@keyframes construction-spin-reverse{to{transform:rotate(-360deg)}}
+@keyframes construction-gear-clockwise{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes construction-gear-counterclockwise{from{transform:rotate(22.5deg)}to{transform:rotate(-337.5deg)}}
 @keyframes construction-glow{to{opacity:.55;transform:translateX(50%) scale(.86)}}
-@keyframes construction-rise{to{transform:translateX(50%) translateY(-5px) scale(1.025)}}
+@keyframes construction-rise{from{transform:translateY(2px)}to{transform:translateY(-3px)}}
 @keyframes construction-window{to{background:#b9dbc4;box-shadow:0 0 0 2px rgba(255,255,255,.7),0 0 10px rgba(112,168,135,.3)}}
-@keyframes construction-block{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-17px) rotate(8deg)}}
 @keyframes construction-pulse{70%{box-shadow:0 0 0 7px rgba(87,161,110,0)}100%{box-shadow:0 0 0 0 rgba(87,161,110,0)}}
 @keyframes construction-progress{0%{transform:translateX(0)}55%,100%{transform:translateX(-325%)}}
 @media(max-width:430px){
@@ -818,7 +819,6 @@ html,body{background:var(--bg);color:var(--text)}
   .construction-glow,
   .construction-building,
   .construction-building span,
-  .construction-block,
   .construction-gear,
   .construction-status span,
   .construction-progress span{animation:none!important}
