@@ -1113,7 +1113,7 @@ html,body{background:var(--bg);color:var(--text)}
 }
 
 /* رودمپ همه مسیرهای گزارش در بالای صفحه، به‌صورت آرام و یک‌خطی تغییر مرحله را نمایش می‌دهد. */
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard){
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard){
   display:flex;
   align-items:center;
   gap:0;
@@ -1125,7 +1125,7 @@ html,body{background:var(--bg);color:var(--text)}
   line-height:1.2;
   white-space:nowrap;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) span{
   display:flex;
   flex:0 0 auto;
   align-items:center;
@@ -1141,7 +1141,7 @@ html,body{background:var(--bg);color:var(--text)}
   overflow-wrap:normal;
   transition:background-color .32s ease,color .32s ease,box-shadow .32s ease,transform .32s ease,opacity .32s ease;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) i{
   flex:1 1 28px;
   min-width:8px;
   height:1px;
@@ -1149,41 +1149,41 @@ html,body{background:var(--bg);color:var(--text)}
   transform-origin:center;
   transition:background-color .32s ease,opacity .32s ease,transform .32s ease;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) span{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) span{
   background:#eef2ef;
   color:#77817b;
   box-shadow:none;
   opacity:.72;
   transform:translateY(0);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) i{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard):not(.roadmap-ready) i{
   background:var(--border);
   opacity:.45;
   transform:scaleX(.55);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.done{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.done{
   opacity:.9;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.active{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready span.active{
   box-shadow:0 4px 10px rgba(36,75,59,.16);
   transform:translateY(-1px);
   transition-delay:.12s;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready i{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready i{
   opacity:1;
   transform:scaleX(1);
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard).roadmap-ready i.done{
+[data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard).roadmap-ready i.done{
   background:#9bbda7;
 }
 /* مسیر پنج‌مرحله‌ای افراد عمداً آرام‌تر است تا تغییر هر مرحله خوانا بماند. */
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
+[data-report-roadmap].report-stepper--people span{
   transition-duration:.62s;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
+[data-report-roadmap].report-stepper--people i{
   transition-duration:.62s;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.active{
+[data-report-roadmap].report-stepper--people.roadmap-ready span.active{
   transition-delay:.18s;
 }
 
@@ -1257,7 +1257,7 @@ html,body{background:var(--bg);color:var(--text)}
   transform:translateY(-1px);
 }
 @media(max-width:559px){
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard){
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard){
     overflow-x:auto;
     padding-bottom:4px;
     scroll-behavior:smooth;
@@ -1265,13 +1265,13 @@ html,body{background:var(--bg);color:var(--text)}
     scrollbar-width:none;
     -webkit-overflow-scrolling:touch;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard)::-webkit-scrollbar{
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard)::-webkit-scrollbar{
     display:none;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span{
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) span{
     scroll-snap-align:center;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i{
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) i{
     flex:0 0 28px;
   }
 }
@@ -1291,8 +1291,8 @@ html,body{background:var(--bg);color:var(--text)}
   }
 }
 @media(prefers-reduced-motion:reduce){
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) span,
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) :is(.report-stepper--people,.report-stepper--standard) i,
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) span,
+  [data-report-roadmap]:is(.report-stepper--people,.report-stepper--standard) i,
   #incidentReportPage .form-section-fields .field-textarea{
     transition:none;
   }

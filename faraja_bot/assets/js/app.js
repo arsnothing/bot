@@ -106,12 +106,34 @@ const SOCIAL_LOGO_FILES = Object.freeze({
 });
 
 let socialLinkRowSequence = 0;
+let roadmapTransitionSequence = 0;
+
+function activateRoadmapsAfterPaint(sequence) {
+  const activate = () => {
+    // Ignore an animation queued for a page that the user has already left.
+    if (sequence !== roadmapTransitionSequence) return;
+    document.querySelectorAll('[data-report-roadmap]').forEach(stepper => stepper.classList.add('roadmap-ready'));
+  };
+
+  const prefersReducedMotion = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReducedMotion) return activate();
+
+  // Two frames give every newly visible page one rendered neutral state before the
+  // ready state is applied. A synchronous remove/add only animated intermittently
+  // after the first route change in mobile WebViews.
+  const nextFrame = callback => typeof window.requestAnimationFrame === 'function'
+    ? window.requestAnimationFrame(callback)
+    : setTimeout(callback, 16);
+  nextFrame(() => nextFrame(activate));
+}
 
 function renderReportRoadmaps() {
   const isPeopleReport = state.category === 'افراد';
   const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
   const stepAttribute = isPeopleReport ? 'peopleStep' : 'standardStep';
   const signature = steps.join('|');
+  const sequence = ++roadmapTransitionSequence;
 
   document.querySelectorAll('[data-report-roadmap]').forEach(stepper => {
     const activeStep = Number(stepper.dataset[stepAttribute]);
@@ -139,10 +161,11 @@ function renderReportRoadmaps() {
       connector.classList.toggle('done', index < activeStep);
     });
 
-    // Force the compact roadmap to transition from its neutral state when the page changes.
+    // Flush the neutral state before scheduling the ready state for the next paint.
     void stepper.offsetWidth;
-    stepper.classList.add('roadmap-ready');
   });
+
+  activateRoadmapsAfterPaint(sequence);
 }
 
 function revealActiveRoadmap(page) {
