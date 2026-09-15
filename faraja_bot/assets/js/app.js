@@ -33,6 +33,26 @@ const PEOPLE_REPORT_STEPS = Object.freeze([
   'مستندات'
 ]);
 
+const DRAFT_STORAGE_KEY = 'faraja-report-draft-v1';
+const DRAFT_VERSION = 1;
+const REPORT_CATEGORIES = new Set(['افراد', 'املاک', 'اشیاء', 'رویداد', 'نهاد و سازمان']);
+const RESTORABLE_PAGE_IDS = new Set([
+  'homePage',
+  'locationRegistrationPage',
+  'categoryPage',
+  'objectTypePage',
+  'phenomenonTypePage',
+  'formPage',
+  'timePage',
+  'locationPage',
+  'incidentReportPage',
+  'documentsPage'
+]);
+
+let timeDraft = null;
+let isRestoringDraft = false;
+let hasSubmittedReport = false;
+
 function renderReportRoadmaps() {
   const isPeopleReport = state.category === 'افراد';
   const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
@@ -70,6 +90,17 @@ function renderReportRoadmaps() {
   });
 }
 
+function revealActiveRoadmap(page) {
+  if (!page || typeof page.querySelector !== 'function') return;
+  const roadmap = page.querySelector('.report-stepper--people');
+  if (!roadmap || roadmap.scrollWidth <= roadmap.clientWidth) return;
+  const activeStep = roadmap.querySelector('span.active');
+  if (!activeStep || typeof activeStep.scrollIntoView !== 'function') return;
+
+  const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  activeStep.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
 function iconMarkup(name, className = 'button-icon') {
   return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
 }
@@ -88,6 +119,157 @@ function enDigits(value) {
   return String(value ?? '')
     .replace(/[۰-۹]/g, digit => EN_DIGITS[FA_DIGITS.indexOf(digit)])
     .replace(/[٠-٩]/g, digit => EN_DIGITS[AR_DIGITS.indexOf(digit)]);
+}
+
+function isPlainRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readFieldValue(id) {
+  const element = document.getElementById(id);
+  return element && typeof element.value === 'string' ? element.value : '';
+}
+
+function captureTimeDraft() {
+  timeDraft = {
+    day: readFieldValue('dateDay'),
+    month: readFieldValue('dateMonth'),
+    year: readFieldValue('dateYear'),
+    clock: readFieldValue('timeClock'),
+    approximate: readFieldValue('approxText')
+  };
+}
+
+function captureLocationDraft() {
+  state.location = {
+    ...state.location,
+    province: readFieldValue('province').trim(),
+    city: readFieldValue('city').trim(),
+    address: readFieldValue('address').trim()
+  };
+}
+
+function getDraftStorage() {
+  try {
+    return typeof window !== 'undefined' && window.localStorage ? window.localStorage : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function activePageId() {
+  const activePage = document.querySelector('.page.active');
+  return activePage && RESTORABLE_PAGE_IDS.has(activePage.id) ? activePage.id : 'homePage';
+}
+
+function capturePageDraft(pageId) {
+  if (pageId === 'formPage' || pageId === 'incidentReportPage') collectForm();
+  if (pageId === 'timePage') captureTimeDraft();
+  if (pageId === 'locationPage') captureLocationDraft();
+}
+
+function persistReportDraft(pageId = activePageId()) {
+  if (isRestoringDraft || hasSubmittedReport) return;
+  const storage = getDraftStorage();
+  if (!storage) return;
+
+  const savedPage = RESTORABLE_PAGE_IDS.has(pageId) ? pageId : 'homePage';
+  capturePageDraft(savedPage);
+
+  const snapshot = {
+    version: DRAFT_VERSION,
+    page: savedPage,
+    state: {
+      category: state.category,
+      subtype: state.subtype,
+      form: state.form,
+      formStep: state.formStep,
+      location: state.location,
+      time: state.time
+    },
+    timeDraft
+  };
+
+  try {
+    // تصویرهای انتخاب‌شده به‌علت محدودیت ظرفیت localStorage ذخیره نمی‌شوند.
+    storage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch (error) {
+    // ذخیره‌سازی مرورگر ممکن است در حالت خصوصی یا فضای پرشده در دسترس نباشد.
+  }
+}
+
+function clearReportDraft() {
+  const storage = getDraftStorage();
+  if (!storage) return;
+  try {
+    storage.removeItem(DRAFT_STORAGE_KEY);
+  } catch (error) {
+    // نبودن دسترسی به localStorage نباید روند گزارش را متوقف کند.
+  }
+}
+
+function restoredTimeDraft(value) {
+  if (!isPlainRecord(value)) return null;
+  return {
+    day: typeof value.day === 'string' ? value.day : '',
+    month: typeof value.month === 'string' ? value.month : '',
+    year: typeof value.year === 'string' ? value.year : '',
+    clock: typeof value.clock === 'string' ? value.clock : '',
+    approximate: typeof value.approximate === 'string' ? value.approximate : ''
+  };
+}
+
+function restoreReportDraft() {
+  const storage = getDraftStorage();
+  if (!storage) return false;
+
+  let snapshot;
+  try {
+    const raw = storage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return false;
+    snapshot = JSON.parse(raw);
+  } catch (error) {
+    clearReportDraft();
+    return false;
+  }
+
+  if (!isPlainRecord(snapshot) || snapshot.version !== DRAFT_VERSION || !isPlainRecord(snapshot.state)) {
+    clearReportDraft();
+    return false;
+  }
+
+  const savedState = snapshot.state;
+  const category = canonicalCategory(typeof savedState.category === 'string' ? savedState.category : '');
+  state.category = REPORT_CATEGORIES.has(category) ? category : '';
+  state.subtype = typeof savedState.subtype === 'string' ? savedState.subtype : '';
+  state.form = isPlainRecord(savedState.form) ? { ...savedState.form } : {};
+  state.formStep = Number.isInteger(savedState.formStep) && savedState.formStep >= 0 ? savedState.formStep : 0;
+  state.location = isPlainRecord(savedState.location) ? { ...savedState.location } : {};
+  state.time = isPlainRecord(savedState.time) ? { ...savedState.time } : {};
+  state.documents = [];
+  timeDraft = restoredTimeDraft(snapshot.timeDraft);
+
+  let pageId = typeof snapshot.page === 'string' && RESTORABLE_PAGE_IDS.has(snapshot.page) ? snapshot.page : 'homePage';
+  const needsCategory = new Set(['objectTypePage', 'phenomenonTypePage', 'formPage', 'timePage', 'locationPage', 'incidentReportPage', 'documentsPage']);
+  if (needsCategory.has(pageId) && !state.category) pageId = 'categoryPage';
+  if (pageId === 'objectTypePage' && state.category !== 'اشیاء') pageId = 'categoryPage';
+  if (pageId === 'phenomenonTypePage' && state.category !== 'رویداد') pageId = 'categoryPage';
+  if (pageId === 'incidentReportPage' && state.category !== 'افراد') pageId = 'locationPage';
+
+  isRestoringDraft = true;
+  try {
+    if (pageId === 'formPage') openForm();
+    else if (pageId === 'timePage') openTime();
+    else if (pageId === 'locationPage') openLocation();
+    else if (pageId === 'incidentReportPage') openIncidentReport();
+    else if (pageId === 'documentsPage') openDocuments();
+    else showPage(pageId);
+  } finally {
+    isRestoringDraft = false;
+  }
+
+  persistReportDraft(pageId);
+  return true;
 }
 
 function normalizeFieldValue(element) {
@@ -132,15 +314,25 @@ document.addEventListener('input', event => {
   if (event.target.matches('input, textarea')) {
     normalizeFieldValue(event.target);
     resizeTextarea(event.target);
+    persistReportDraft();
   }
 });
 
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('pagehide', () => persistReportDraft());
+}
+
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
   const page = document.getElementById(id);
   if (!page) return;
+  persistReportDraft();
+  document.querySelectorAll('.page').forEach(item => item.classList.remove('active'));
   page.classList.add('active');
   renderReportRoadmaps();
+  persistReportDraft(id);
+  const revealRoadmap = () => revealActiveRoadmap(page);
+  if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(revealRoadmap);
+  else setTimeout(revealRoadmap, 0);
   window.scrollTo({ top: 0, behavior: 'instant' });
   setTimeout(normalizeVisibleNumbers, 0);
 }
@@ -153,12 +345,15 @@ function resetReport() {
   state.location = {};
   state.time = {};
   state.documents = [];
+  timeDraft = null;
+  hasSubmittedReport = false;
   marker = null;
   reportMap = null;
 }
 
 function startReport() {
   resetReport();
+  clearReportDraft();
   showPage('categoryPage');
 }
 
@@ -308,7 +503,7 @@ function buildForm(category, subtype) {
 function personForm() {
   return [
     formSection('مشخصات فردی',
-      `${field('firstName','نام','text',{textOnly:true})}${field('lastName','نام خانوادگی','text',{textOnly:true})}${field('nationalId','کد ملی','text',{numeric:true,maxLength:10,validation:'national-id',placeholder:'۱۰ رقم'})}${field('age','سن','text',{numeric:true,maxLength:3,validation:'age',placeholder:'مثلاً ۳۵'})}${choices('gender','جنسیت',['مرد','زن'])}`,
+      `${field('firstName','نام','text',{textOnly:true})}${field('lastName','نام خانوادگی','text',{textOnly:true})}${field('nickname','شهرت','text',{textOnly:true})}${field('nationalId','کد ملی','text',{numeric:true,maxLength:10,validation:'national-id'})}${field('age','سن','text',{numeric:true,maxLength:3,validation:'age'})}${choices('gender','جنسیت',['مرد','زن','نامشخص'],{columns:3})}`,
       'اطلاعات پایه برای شناسایی فرد را وارد کنید.'),
     formSection('مشخصات ظاهری',
       `${field('height','قد (سانتی‌متر)','text',{numeric:true,maxLength:3,validation:'height',placeholder:'مثلاً ۱۷۵'})}${choices('bodyBuild','اندام',['لاغر','معمولی','چاق'],{columns:3})}${field('face','رنگ چهره','text',{textOnly:true})}${field('hairStatus','وضعیت موی سر','text',{textOnly:true})}${field('hairColor','رنگ مو','text',{textOnly:true})}${field('beard','محاسن','text',{textOnly:true})}${field('appearance','ویژگی خاص','textarea')}`,
@@ -452,6 +647,7 @@ function nextFormSection() {
   if (!validateVisibleFormFields()) return;
   state.formStep += 1;
   renderFormSection(sections);
+  persistReportDraft();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -460,6 +656,7 @@ function previousFormSection() {
   collectForm();
   state.formStep -= 1;
   renderFormSection();
+  persistReportDraft();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -468,6 +665,7 @@ function pickChoice(button, name, value) {
   row.querySelectorAll('.choice-btn').forEach(item => item.classList.remove('selected'));
   button.classList.add('selected');
   button.dataset.value = value;
+  persistReportDraft();
 }
 
 function collectForm() {
@@ -533,14 +731,14 @@ function restoreTimeFields() {
   }
   document.getElementById('exactTime').hidden = mode !== 'دقیق';
   document.getElementById('approxTime').hidden = mode !== 'تقریبی';
-  if (state.time.date) {
-    const [year, month, day] = state.time.date.split('/');
-    document.getElementById('dateYear').value = faDigits(year || '');
-    document.getElementById('dateMonth').value = faDigits(month || '');
-    document.getElementById('dateDay').value = faDigits(day || '');
-  }
-  document.getElementById('timeClock').value = state.time.clock || '';
-  document.getElementById('approxText').value = state.time.approximate || '';
+
+  const savedTimeDraft = timeDraft;
+  const [year, month, day] = !savedTimeDraft && state.time.date ? state.time.date.split('/') : [];
+  document.getElementById('dateYear').value = savedTimeDraft ? savedTimeDraft.year : faDigits(year || '');
+  document.getElementById('dateMonth').value = savedTimeDraft ? savedTimeDraft.month : faDigits(month || '');
+  document.getElementById('dateDay').value = savedTimeDraft ? savedTimeDraft.day : faDigits(day || '');
+  document.getElementById('timeClock').value = savedTimeDraft ? savedTimeDraft.clock : state.time.clock || '';
+  document.getElementById('approxText').value = savedTimeDraft ? savedTimeDraft.approximate : state.time.approximate || '';
 }
 
 function setTimeMode(button, mode) {
@@ -550,6 +748,7 @@ function setTimeMode(button, mode) {
   if (mode === 'الان') state.time.selectedAt = new Date().toISOString();
   document.getElementById('exactTime').hidden = mode !== 'دقیق';
   document.getElementById('approxTime').hidden = mode !== 'تقریبی';
+  persistReportDraft();
 }
 
 function continueTime() {
@@ -605,11 +804,13 @@ function setMapPoint(lat, lng) {
     const point = event.target.getLatLng();
     state.location.latitude = point.lat;
     state.location.longitude = point.lng;
+    persistReportDraft();
   });
   state.location.latitude = lat;
   state.location.longitude = lng;
   state.location.known = true;
   document.getElementById('locationStatus').textContent = 'موقعیت انتخاب شد';
+  persistReportDraft();
 }
 
 function useCurrentLocation() {
@@ -635,6 +836,7 @@ function locationUnknown() {
   delete state.location.latitude;
   delete state.location.longitude;
   document.getElementById('locationStatus').textContent = '';
+  persistReportDraft();
 }
 
 function continueLocation() {
@@ -727,6 +929,8 @@ async function sendReport() {
     });
     const output = await response.json();
     if (!response.ok || !output.ok) throw new Error(output.message || 'ثبت گزارش انجام نشد.');
+    hasSubmittedReport = true;
+    clearReportDraft();
     success.textContent = 'گزارش با موفقیت ثبت شد.';
   } catch (error) {
     success.textContent = error.message || 'ثبت گزارش انجام نشد.';
@@ -735,5 +939,7 @@ async function sendReport() {
   }
 }
 
-renderReportRoadmaps();
-normalizeVisibleNumbers();
+if (!restoreReportDraft()) {
+  renderReportRoadmaps();
+  normalizeVisibleNumbers();
+}

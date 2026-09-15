@@ -74,8 +74,8 @@ function validateFormFields(array $form): void {
   }
 
   $gender = formValue($form, 'gender');
-  if ($gender !== null && !in_array($gender, ['مرد', 'زن'], true)) {
-    throw new InvalidArgumentException('جنسیت باید مرد یا زن باشد.');
+  if ($gender !== null && !in_array($gender, ['مرد', 'زن', 'نامشخص'], true)) {
+    throw new InvalidArgumentException('جنسیت باید مرد، زن یا نامشخص باشد.');
   }
 
   $bodyBuild = formValue($form, 'bodyBuild');
@@ -83,7 +83,7 @@ function validateFormFields(array $form): void {
     throw new InvalidArgumentException('اندام انتخاب‌شده نامعتبر است.');
   }
 
-  foreach (['firstName' => 'نام', 'lastName' => 'نام خانوادگی', 'face' => 'رنگ چهره', 'hairStatus' => 'وضعیت موی سر', 'hairColor' => 'رنگ مو', 'beard' => 'محاسن'] as $key => $label) {
+  foreach (['firstName' => 'نام', 'lastName' => 'نام خانوادگی', 'nickname' => 'شهرت', 'face' => 'رنگ چهره', 'hairStatus' => 'وضعیت موی سر', 'hairColor' => 'رنگ مو', 'beard' => 'محاسن'] as $key => $label) {
     $value = formValue($form, $key);
     if ($value !== null && preg_match('/[0-9۰-۹٠-٩]/u', $value)) {
       throw new InvalidArgumentException($label . ' فقط باید شامل متن باشد.');
