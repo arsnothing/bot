@@ -37,18 +37,36 @@ function renderReportRoadmaps() {
   const isPeopleReport = state.category === 'افراد';
   const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
   const stepAttribute = isPeopleReport ? 'peopleStep' : 'standardStep';
+  const signature = steps.join('|');
 
   document.querySelectorAll('[data-report-roadmap]').forEach(stepper => {
     const activeStep = Number(stepper.dataset[stepAttribute]);
     stepper.classList.toggle('report-stepper--people', isPeopleReport);
-    stepper.innerHTML = steps.map((label, index) => {
-      const stateClass = index < activeStep ? 'done' : index === activeStep ? 'active' : '';
-      const current = index === activeStep ? ' aria-current="step"' : '';
-      const connector = index < steps.length - 1
-        ? `<i${index < activeStep ? ' class="done"' : ''} aria-hidden="true"></i>`
-        : '';
-      return `<span class="${stateClass}"${current}>${label}</span>${connector}`;
-    }).join('');
+    stepper.classList.remove('roadmap-ready');
+
+    if (stepper.dataset.roadmapSteps !== signature) {
+      stepper.innerHTML = steps.map((label, index) => {
+        const connector = index < steps.length - 1 ? '<i aria-hidden="true"></i>' : '';
+        return `<span>${label}</span>${connector}`;
+      }).join('');
+      stepper.dataset.roadmapSteps = signature;
+    }
+
+    stepper.querySelectorAll('span').forEach((item, index) => {
+      const isDone = index < activeStep;
+      const isActive = index === activeStep;
+      item.classList.toggle('done', isDone);
+      item.classList.toggle('active', isActive);
+      if (isActive) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+    });
+    stepper.querySelectorAll('i').forEach((connector, index) => {
+      connector.classList.toggle('done', index < activeStep);
+    });
+
+    // Force the compact roadmap to transition from its neutral state when the page changes.
+    void stepper.offsetWidth;
+    stepper.classList.add('roadmap-ready');
   });
 }
 

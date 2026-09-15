@@ -824,39 +824,68 @@ html,body{background:var(--bg);color:var(--text)}
   .construction-progress span{animation:none!important}
 }
 
-/* مسیر اختصاصی گزارش افراد: پنج گام خوانا با فاصله‌گذاری یکنواخت. */
+/* پنج مرحلهٔ گزارش افراد در یک ردیف جمع‌وجور و خوانا باقی می‌مانند. */
 :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
   display:flex;
   align-items:center;
-  gap:3px;
+  gap:0;
   min-width:0;
-  margin:3px 0 18px;
+  margin:2px 0 16px;
   color:#77817b;
-  font-size:10px;
+  font-size:clamp(8.5px,2.4vw,11px);
   font-weight:800;
-  white-space:normal;
+  line-height:1.2;
+  white-space:nowrap;
 }
 :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
   display:flex;
-  flex:1 1 0;
+  flex:0 0 auto;
   align-items:center;
   justify-content:center;
   min-width:0;
-  min-height:38px;
-  padding:6px 4px;
-  border-radius:10px;
-  line-height:1.35;
+  min-height:26px;
+  padding:3px 1px;
+  border-radius:7px;
+  line-height:1.2;
   text-align:center;
-  white-space:normal;
-  overflow-wrap:anywhere;
+  white-space:nowrap;
+  word-break:keep-all;
+  overflow-wrap:normal;
+  transition:background-color .24s ease,color .24s ease,box-shadow .24s ease,transform .24s ease,opacity .24s ease;
 }
 :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
-  flex:0 1 13px;
-  min-width:5px;
+  flex:1 1 26px;
+  min-width:4px;
   height:1px;
   margin:auto 0;
+  transform-origin:center;
+  transition:background-color .24s ease,opacity .24s ease,transform .24s ease;
 }
-:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i.done{
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people:not(.roadmap-ready) span{
+  background:#eef2ef;
+  color:#77817b;
+  box-shadow:none;
+  opacity:.72;
+  transform:translateY(0);
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people:not(.roadmap-ready) i{
+  background:var(--border);
+  opacity:.45;
+  transform:scaleX(.55);
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.done{
+  opacity:.9;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready span.active{
+  box-shadow:0 4px 10px rgba(36,75,59,.16);
+  transform:translateY(-1px);
+  transition-delay:.06s;
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready i{
+  opacity:1;
+  transform:scaleX(1);
+}
+:is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people.roadmap-ready i.done{
   background:#9bbda7;
 }
 
@@ -929,21 +958,21 @@ html,body{background:var(--bg);color:var(--text)}
   filter:none;
   transform:translateY(-1px);
 }
-@media(max-width:430px){
+@media(max-width:340px){
   :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people{
-    gap:2px;
-    margin-bottom:18px;
-    font-size:10px;
+    overflow-x:auto;
+    padding-bottom:2px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
   }
-  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span{
-    min-height:42px;
-    padding:5px 3px;
-    border-radius:8px;
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people::-webkit-scrollbar{
+    display:none;
   }
   :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i{
-    flex-basis:7px;
-    min-width:4px;
+    flex:0 0 12px;
   }
+}
+@media(max-width:430px){
   #incidentReportPage .incident-report-card{
     padding:17px 14px;
     border-radius:16px;
@@ -959,6 +988,8 @@ html,body{background:var(--bg);color:var(--text)}
   }
 }
 @media(prefers-reduced-motion:reduce){
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people span,
+  :is(#formPage,#timePage,#locationPage,#incidentReportPage,#documentsPage) .report-stepper--people i,
   #incidentReportPage .form-section-fields .field-textarea{
     transition:none;
   }
