@@ -107,4 +107,16 @@ function buttonIcon(string $name, string $class = 'button-icon'): string {
     <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4.75 7.25h14.5M9.5 7.25V4.5h5v2.75M6.75 7.25l.75 12.25h9l.75-12.25M10 11v4.75M14 11v4.75"/>
     </symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+      <path d="M12 5v14M5 12h14"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10.75" cy="10.75" r="5.75"/><path d="m15.1 15.1 4.15 4.15"/>
+    </symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.25 14.75 7.5 16.5a3.25 3.25 0 1 1-4.6-4.6l3.35-3.35a3.25 3.25 0 0 1 4.6 0M14.75 9.25l1.75-1.75a3.25 3.25 0 1 1 4.6 4.6l-3.35 3.35a3.25 3.25 0 0 1-4.6 0M8.75 15.25l6.5-6.5"/>
+    </symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6.5 9.25 5.5 5.5 5.5-5.5"/>
+    </symbol>
   </svg>

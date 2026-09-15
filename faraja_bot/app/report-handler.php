@@ -44,13 +44,79 @@ function validNationalId(string $value): bool {
   return (int)$digits[9] === $expected;
 }
 
+function normalizeSocialLinks(array &$form): void {
+  if (!array_key_exists('socialLinks', $form)) return;
+  if (!is_array($form['socialLinks'])) {
+    throw new InvalidArgumentException('نشانی‌های فضای مجازی نامعتبر است.');
+  }
+  if (count($form['socialLinks']) > 20) {
+    throw new InvalidArgumentException('تعداد نشانی‌های فضای مجازی بیش از حد مجاز است.');
+  }
+
+  $platformPrefixes = [
+    'telegram' => 't.me/',
+    'instagram' => 'instagram.com/',
+    'x' => 'x.com/',
+    'whatsapp' => 'wa.me/',
+    'youtube' => 'youtube.com/',
+    'facebook' => 'facebook.com/',
+    'linkedin' => 'linkedin.com/',
+    'github' => 'github.com/',
+    'tiktok' => 'tiktok.com/@',
+    'threads' => 'threads.net/@',
+    'discord' => 'discord.gg/',
+    'eitaa' => 'eitaa.com/',
+    'bale' => 'ble.ir/',
+    'soroush' => 'splus.ir/',
+    'rubika' => 'rubika.ir/',
+    'igap' => 'igap.net/',
+    'gap' => 'gap.im/',
+    'virasty' => 'virasty.com/',
+    'aparat' => 'aparat.com/'
+  ];
+
+  $links = [];
+  foreach ($form['socialLinks'] as $link) {
+    if (!is_array($link)) continue;
+    $platform = isset($link['platform']) && is_string($link['platform']) ? trim($link['platform']) : '';
+    $value = isset($link['value']) && is_string($link['value']) ? trim($link['value']) : '';
+    if ($platform === '' && $value === '') continue;
+    if (!array_key_exists($platform, $platformPrefixes)) {
+      throw new InvalidArgumentException('پلتفرم انتخاب‌شده نامعتبر است.');
+    }
+    // ردیف‌های انتخاب‌شده اما ناتمام در رابط کاربری، در گزارش نهایی ذخیره نمی‌شوند.
+    if ($value === '') continue;
+    if (strlen($value) > 500 || preg_match('/[\x00-\x1F]/', $value)) {
+      throw new InvalidArgumentException('نشانی فضای مجازی نامعتبر است.');
+    }
+    $value = ltrim($value, '/');
+    if ($value === '') continue;
+    $links[] = [
+      'platform' => $platform,
+      'value' => $value,
+      'url' => 'https://' . $platformPrefixes[$platform] . $value
+    ];
+  }
+
+  if ($links) $form['socialLinks'] = $links;
+  else unset($form['socialLinks']);
+}
+
+function formHasMeaningfulValue(array $form): bool {
+  foreach ($form as $key => $value) {
+    if (is_scalar($value) && trim((string)$value) !== '') return true;
+    if ($key === 'socialLinks' && is_array($value) && count($value) > 0) return true;
+  }
+  return false;
+}
+
 function validateFormFields(array $form): void {
   $nationalId = formValue($form, 'nationalId');
   if ($nationalId !== null && !validNationalId($nationalId)) {
     throw new InvalidArgumentException('کد ملی باید ۱۰ رقم معتبر باشد.');
   }
 
-  foreach (['phoneFixed' => 'تلفن ثابت', 'phoneMobile' => 'تلفن همراه', 'phoneWork' => 'تلفن محل کار', 'phoneHome' => 'تلفن منزل'] as $key => $label) {
+  foreach (['phoneFixed' => 'شماره ثابت محل سکونت', 'phoneMobile' => 'شماره همراه', 'phoneWork' => 'شماره ثابت محل کار', 'phoneHome' => 'شماره ثابت محل سکونت'] as $key => $label) {
     $phone = formValue($form, $key);
     if ($phone !== null && !preg_match('/^\d{11}$/', englishDigits($phone))) {
       throw new InvalidArgumentException($label . ' باید دقیقاً ۱۱ رقم باشد.');
@@ -68,9 +134,14 @@ function validateFormFields(array $form): void {
   $height = formValue($form, 'height');
   if ($height !== null) {
     $digits = englishDigits($height);
-    if (!preg_match('/^\d{1,3}$/', $digits) || (int)$digits < 30 || (int)$digits > 250) {
-      throw new InvalidArgumentException('قد باید عددی تا ۳ رقم و بین ۳۰ تا ۲۵۰ سانتی‌متر باشد.');
+    if (!preg_match('/^\d{1,3}$/', $digits) || (int)$digits < 1 || (int)$digits > 250) {
+      throw new InvalidArgumentException('قد باید عددی تا ۳ رقم و حداکثر ۲۵۰ باشد.');
     }
+  }
+
+  $email = formValue($form, 'email');
+  if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+    throw new InvalidArgumentException('نشانی پست الکترونیک را به شکل یک ایمیل معتبر وارد کنید.');
   }
 
   $gender = formValue($form, 'gender');
@@ -83,7 +154,7 @@ function validateFormFields(array $form): void {
     throw new InvalidArgumentException('اندام انتخاب‌شده نامعتبر است.');
   }
 
-  foreach (['firstName' => 'نام', 'lastName' => 'نام خانوادگی', 'nickname' => 'شهرت', 'face' => 'رنگ چهره', 'hairStatus' => 'وضعیت موی سر', 'hairColor' => 'رنگ مو', 'beard' => 'محاسن'] as $key => $label) {
+  foreach (['firstName' => 'نام', 'lastName' => 'نام خانوادگی', 'nickname' => 'شهرت', 'face' => 'رنگ پوست', 'hairStatus' => 'وضعیت موی سر', 'hairColor' => 'رنگ مو', 'beard' => 'محاسن'] as $key => $label) {
     $value = formValue($form, $key);
     if ($value !== null && preg_match('/[0-9۰-۹٠-٩]/u', $value)) {
       throw new InvalidArgumentException($label . ' فقط باید شامل متن باشد.');
@@ -112,7 +183,8 @@ function normalize(array $input): array {
   $form = is_array($input['form'] ?? null) ? $input['form'] : [];
   // فیلدهای حذف‌شده در نسخه‌های قدیمی یا ارسال دستی ذخیره نمی‌شوند.
   unset($form['priority'], $form['weight']);
-  if (count(array_filter($form, fn($value) => is_scalar($value) && trim((string)$value) !== '')) === 0) {
+  normalizeSocialLinks($form);
+  if (!formHasMeaningfulValue($form)) {
     throw new InvalidArgumentException('اطلاعات گزارش وارد نشده است.');
   }
   validateFormFields($form);

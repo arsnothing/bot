@@ -53,6 +53,53 @@ let timeDraft = null;
 let isRestoringDraft = false;
 let hasSubmittedReport = false;
 
+const SOCIAL_PLATFORMS = Object.freeze([
+  { id: 'telegram', name: 'تلگرام', prefix: 't.me/', aliases: ['t.me', 'telegram.me', 'telegram.com'], search: 'تلگرام telegram' },
+  { id: 'instagram', name: 'اینستاگرام', prefix: 'instagram.com/', aliases: ['instagram.com'], search: 'اینستاگرام instagram' },
+  { id: 'x', name: 'ایکس', prefix: 'x.com/', aliases: ['x.com', 'twitter.com'], search: 'ایکس x twitter توییتر' },
+  { id: 'whatsapp', name: 'واتس‌اپ', prefix: 'wa.me/', aliases: ['wa.me', 'whatsapp.com'], search: 'واتس اپ whatsapp' },
+  { id: 'youtube', name: 'یوتیوب', prefix: 'youtube.com/', aliases: ['youtube.com', 'youtu.be'], search: 'یوتیوب youtube' },
+  { id: 'facebook', name: 'فیسبوک', prefix: 'facebook.com/', aliases: ['facebook.com', 'fb.com'], search: 'فیسبوک facebook fb' },
+  { id: 'linkedin', name: 'لینکدین', prefix: 'linkedin.com/', aliases: ['linkedin.com'], search: 'لینکدین linkedin' },
+  { id: 'github', name: 'گیت‌هاب', prefix: 'github.com/', aliases: ['github.com'], search: 'گیت هاب github' },
+  { id: 'tiktok', name: 'تیک‌تاک', prefix: 'tiktok.com/@', aliases: ['tiktok.com'], search: 'تیک تاک tiktok' },
+  { id: 'threads', name: 'تردز', prefix: 'threads.net/@', aliases: ['threads.net'], search: 'تردز threads' },
+  { id: 'discord', name: 'دیسکورد', prefix: 'discord.gg/', aliases: ['discord.gg', 'discord.com'], search: 'دیسکورد discord' },
+  { id: 'eitaa', name: 'ایتا', prefix: 'eitaa.com/', aliases: ['eitaa.com'], search: 'ایتا eitaa' },
+  { id: 'bale', name: 'بله', prefix: 'ble.ir/', aliases: ['ble.ir', 'bale.ai'], search: 'بله bale ble' },
+  { id: 'soroush', name: 'سروش‌پلاس', prefix: 'splus.ir/', aliases: ['splus.ir', 'soroushplus.ir'], search: 'سروش پلاس soroush splus' },
+  { id: 'rubika', name: 'روبیکا', prefix: 'rubika.ir/', aliases: ['rubika.ir'], search: 'روبیکا rubika' },
+  { id: 'igap', name: 'آی‌گپ', prefix: 'igap.net/', aliases: ['igap.net'], search: 'ای گپ آی گپ igap' },
+  { id: 'gap', name: 'گپ', prefix: 'gap.im/', aliases: ['gap.im'], search: 'گپ gap' },
+  { id: 'virasty', name: 'ویراستی', prefix: 'virasty.com/', aliases: ['virasty.com'], search: 'ویراستی virasty' },
+  { id: 'aparat', name: 'آپارات', prefix: 'aparat.com/', aliases: ['aparat.com'], search: 'آپارات aparat' }
+]);
+const SOCIAL_PLATFORM_BY_ID = new Map(SOCIAL_PLATFORMS.map(platform => [platform.id, platform]));
+
+const SOCIAL_LOGO_SHAPES = Object.freeze({
+  telegram: '<path fill="currentColor" stroke="none" d="M20.75 3.8 3.95 10.25c-1.15.45-1.14 1.08-.2 1.38l4.3 1.34 1.66 5.08c.19.56.1.79.69.79.45 0 .65-.21.9-.45l2.12-2.06 4.45 3.29c.84.47 1.43.23 1.65-.76L22.4 5c.29-1.2-.47-1.74-1.65-1.2ZM8.58 12.76l9.73-6.14c.48-.3.94-.14.57.2l-8.35 7.52-.32 3.47-1.65-5.05Z"/>',
+  instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.9" r=".9" fill="currentColor" stroke="none"/>',
+  x: '<path d="M5 3.5h3.45l3.75 5.15 4.3-5.15H19l-5.67 6.78 6.13 10.22H16l-4.5-6.34-5.28 6.34H3.7l6.15-7.38L5 3.5Z" fill="currentColor" stroke="none"/>',
+  whatsapp: '<path d="M20.5 11.65a8.5 8.5 0 0 1-12.58 7.48L3.5 20.5l1.42-4.16A8.5 8.5 0 1 1 20.5 11.65Z"/><path d="M9 7.55c.2-.47.4-.48.67-.48h.57c.18 0 .43.07.53.4l.7 1.72c.08.2.04.43-.1.59l-.47.56c-.12.13-.1.27 0 .42.4.65.96 1.2 1.63 1.58.15.1.3.1.43-.01l.57-.67c.16-.18.35-.2.57-.12l1.63.75c.25.1.4.28.4.47v.7c0 .27-.16.53-.45.66-.48.2-1.1.3-2.1-.1-1.14-.46-2.48-1.53-3.42-2.64-.93-1.1-1.58-2.5-1.53-3.54.02-.48.19-.87.33-1.1Z" fill="currentColor" stroke="none"/>',
+  youtube: '<rect x="2.7" y="6.3" width="18.6" height="11.4" rx="3.1" fill="currentColor" stroke="none"/><path d="m10.2 9.35 5.15 2.65-5.15 2.65V9.35Z" fill="#fff" stroke="none"/>',
+  facebook: '<path d="M13.35 21v-7.55h2.56l.38-2.95h-2.94V8.62c0-.85.24-1.43 1.47-1.43h1.57V4.55c-.27-.04-1.2-.12-2.28-.12-2.26 0-3.81 1.38-3.81 3.92v2.15H7.75v2.95h2.55V21h3.05Z" fill="currentColor" stroke="none"/>',
+  linkedin: '<rect x="3.2" y="3.2" width="17.6" height="17.6" rx="2.2"/><circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"/><path d="M7 11.2v5.8M10.5 17v-5.8M10.5 13.7c.38-1.6 4.5-1.92 4.5.88V17M15 14.35V17"/>',
+  github: '<path d="M12 3.2a8.8 8.8 0 0 0-2.78 17.15c.44.08.6-.19.6-.42v-1.67c-2.45.53-2.97-1.04-2.97-1.04-.4-1.03-.98-1.3-.98-1.3-.8-.55.06-.54.06-.54.89.06 1.35.91 1.35.91.79 1.35 2.07.96 2.58.73.08-.57.31-.96.56-1.18-1.95-.22-4-.97-4-3.9 0-.84.3-1.53.8-2.07-.08-.2-.35-1 .08-2.07 0 0 .66-.21 2.16.79a7.48 7.48 0 0 1 3.93 0c1.5-1 2.16-.79 2.16-.79.43 1.07.16 1.87.08 2.07.5.54.8 1.23.8 2.07 0 2.94-2.06 3.68-4.02 3.9.32.27.6.78.6 1.58v2.35c0 .23.16.5.6.42A8.8 8.8 0 0 0 12 3.2Z" fill="currentColor" stroke="none"/>',
+  tiktok: '<path d="M14.75 4.1c.55 1.62 1.58 2.75 3.35 3.08v2.45a6.88 6.88 0 0 1-3.3-1.12v5.27a4.62 4.62 0 1 1-4-4.58v2.45a2.28 2.28 0 1 0 1.65 2.18V4.1h2.3Z" fill="currentColor" stroke="none"/>',
+  threads: '<path d="M12 3.4c-4.8 0-7.8 3.08-7.8 8.06 0 5.28 3.08 9.14 8.1 9.14 4.2 0 7.16-2.5 7.16-6.06 0-2.9-1.9-4.9-5.07-5.32-.72-2.06-2.14-3.1-4.17-3.1-2.2 0-3.68 1.3-3.68 3.26 0 1.88 1.47 3.07 3.83 3.07 1.4 0 2.65-.2 3.72-.6.07.18.1.4.1.67 0 1.32-.93 2.16-2.4 2.16-1.86 0-3.06-1.32-3.06-3.38H6.25c0 3.54 2.2 5.86 5.56 5.86 3.27 0 5.37-1.9 5.37-4.87 0-3.37-2.46-5.6-6.16-5.6-.88 0-1.6-.42-1.6-1.1 0-.69.58-1.12 1.47-1.12 1.2 0 2.03.6 2.5 1.8A9.93 9.93 0 0 0 12 3.4Z" fill="currentColor" stroke="none"/>',
+  discord: '<path d="M18.45 5.5A15.6 15.6 0 0 0 14.6 4.3l-.47.95a14.2 14.2 0 0 0-4.25 0l-.47-.95A15.1 15.1 0 0 0 5.55 5.5C3.1 9.08 2.44 12.57 2.77 16a15.5 15.5 0 0 0 4.74 2.4l1.15-1.57a9.2 9.2 0 0 1-1.8-.86l.47-.37c3.48 1.6 7.25 1.6 10.69 0l.47.37c-.57.34-1.17.63-1.8.86l1.15 1.57a15.4 15.4 0 0 0 4.74-2.4c.4-3.98-.68-7.43-2.12-10.5ZM9.23 13.88c-1.04 0-1.88-.95-1.88-2.12 0-1.17.83-2.12 1.88-2.12 1.05 0 1.9.95 1.88 2.12 0 1.17-.83 2.12-1.88 2.12Zm5.54 0c-1.04 0-1.88-.95-1.88-2.12 0-1.17.83-2.12 1.88-2.12 1.05 0 1.9.95 1.88 2.12 0 1.17-.83 2.12-1.88 2.12Z" fill="currentColor" stroke="none"/>',
+  eitaa: '<path d="m20.65 4.1-17 6.55c-.85.34-.83.85-.14 1.06l4.35 1.36 1.66 4.95c.2.55.1.78.67.78.43 0 .62-.2.86-.44l2.1-2.02 4.3 3.18c.78.45 1.35.22 1.55-.72l2.62-13.45c.26-1.1-.42-1.58-1.57-1.25Z" fill="currentColor" stroke="none"/><path d="m8 12.9 9.55-6.1-7.55 7.2" stroke="#fff" stroke-width="1.25"/>',
+  bale: '<path d="M4 5.3A2.3 2.3 0 0 1 6.3 3h11.4A2.3 2.3 0 0 1 20 5.3v8.45a2.3 2.3 0 0 1-2.3 2.3H11l-3.8 3v-3H6.3A2.3 2.3 0 0 1 4 13.75V5.3Z"/><path d="M9 7h3.05a1.8 1.8 0 1 1 0 3.6H9V7Zm0 3.6h3.6a1.8 1.8 0 1 1 0 3.6H9v-3.6Z" fill="currentColor" stroke="none"/>',
+  soroush: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H12l-3.8 3V16h-1.7A2.5 2.5 0 0 1 4 13.5v-8Z"/><path d="M8 8.5h8M8 11.5h5.5"/>',
+  rubika: '<rect x="3" y="4" width="18" height="16" rx="4"/><path d="m10 8.5 5.4 3.5-5.4 3.5v-7Z" fill="currentColor" stroke="none"/>',
+  igap: '<path d="M4 5.3A2.3 2.3 0 0 1 6.3 3h11.4A2.3 2.3 0 0 1 20 5.3v8.4a2.3 2.3 0 0 1-2.3 2.3H11l-3.8 3v-3H6.3A2.3 2.3 0 0 1 4 13.7V5.3Z"/><path d="M12 7.2v4.2M12 13.8h.01" stroke-width="2"/>',
+  gap: '<path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v5.5A3.5 3.5 0 0 1 15.5 17H11l-3.6 2.85V17H5A3.5 3.5 0 0 1 1.5 13.5V8A3.5 3.5 0 0 1 5 4.5Z"/><path d="M9.6 9.1a2.3 2.3 0 1 0 0 3.8M14.5 10.2v3.2"/>',
+  virasty: '<path d="m5 18.8 1.25-4.5L15.9 4.65a2 2 0 0 1 2.83 2.83L9.1 17.12 5 18.8Z"/><path d="m13.85 6.7 2.83 2.83M5.1 19l4.1-1.68"/>',
+  aparat: '<circle cx="12" cy="12" r="7.6"/><circle cx="12" cy="12" r="3.35"/><circle cx="12" cy="5.65" r=".7" fill="currentColor" stroke="none"/><circle cx="18.35" cy="12" r=".7" fill="currentColor" stroke="none"/><circle cx="12" cy="18.35" r=".7" fill="currentColor" stroke="none"/><circle cx="5.65" cy="12" r=".7" fill="currentColor" stroke="none"/>'
+});
+
+let socialLinkRowSequence = 0;
+
 function renderReportRoadmaps() {
   const isPeopleReport = state.category === 'افراد';
   const steps = isPeopleReport ? PEOPLE_REPORT_STEPS : STANDARD_REPORT_STEPS;
@@ -273,13 +320,19 @@ function restoreReportDraft() {
 }
 
 function normalizeFieldValue(element) {
-  if (element.type === 'file') return;
-  let value = faDigits(element.value);
+  if (element.type === 'file' || element.dataset.socialLinkValue !== undefined) return;
+  let value = element.type === 'email' || element.dataset.preserveLatin === 'true' ? String(element.value) : faDigits(element.value);
 
   if (element.dataset.numeric === 'true') {
     value = value.replace(/[^۰-۹]/g, '');
     const maxLength = Number(element.getAttribute('maxlength'));
     if (Number.isInteger(maxLength) && maxLength > 0) value = value.slice(0, maxLength);
+
+    const maxValue = Number(element.dataset.maxValue);
+    const numberValue = Number(enDigits(value));
+    if (Number.isFinite(maxValue) && value && Number.isFinite(numberValue) && numberValue > maxValue) {
+      value = faDigits(maxValue);
+    }
   }
 
   if (element.dataset.textOnly === 'true') {
@@ -311,11 +364,31 @@ function normalizeVisibleNumbers() {
 }
 
 document.addEventListener('input', event => {
-  if (event.target.matches('input, textarea')) {
-    normalizeFieldValue(event.target);
-    resizeTextarea(event.target);
+  const target = event.target;
+  if (!target || typeof target.matches !== 'function') return;
+  if (target.matches('.social-platform-search')) {
+    filterSocialPlatforms(target);
+    return;
+  }
+  if (target.matches('[data-social-link-value]')) {
+    persistReportDraft();
+    return;
+  }
+  if (target.matches('input, textarea')) {
+    normalizeFieldValue(target);
+    resizeTextarea(target);
     persistReportDraft();
   }
+});
+
+document.addEventListener('click', event => {
+  const target = event.target;
+  if (!target || typeof target.closest !== 'function' || target.closest('[data-social-links]')) return;
+  closeSocialPlatformMenus();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeSocialPlatformMenus();
 });
 
 if (typeof window.addEventListener === 'function') {
@@ -383,16 +456,19 @@ function field(name, label, type = 'text', options = {}) {
   const numeric = options.numeric ? 'numeric' : '';
   const textOnly = options.textOnly ? 'text-only' : '';
   const maxLength = options.maxLength ? ` maxlength="${options.maxLength}"` : '';
+  const maxValue = Number.isFinite(options.maxValue) ? ` data-max-value="${options.maxValue}"` : '';
   const placeholder = options.placeholder ? ` placeholder="${options.placeholder}"` : '';
   const validation = options.validation ? ` data-validation="${options.validation}"` : '';
   const numericRule = options.numeric ? ' data-numeric="true"' : '';
   const textRule = options.textOnly ? ' data-text-only="true"' : '';
-  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${placeholder}`;
+  const direction = options.ltr ? ' dir="ltr"' : '';
+  const inputMode = options.numeric ? 'numeric' : type === 'email' ? 'email' : 'text';
+  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}${placeholder}${direction}`;
 
   if (type === 'textarea') {
     return `<div class="field-group"><label>${label}</label><textarea class="field-textarea ${numeric} ${textOnly}" ${attributes} data-auto-resize="true"></textarea></div>`;
   }
-  return `<div class="field-group"><label>${label}</label><input class="field-input ${numeric} ${textOnly}" ${attributes} type="${type}" inputmode="${options.numeric ? 'numeric' : 'text'}"></div>`;
+  return `<div class="field-group"><label>${label}</label><input class="field-input ${numeric} ${textOnly}" ${attributes} type="${type}" inputmode="${inputMode}"></div>`;
 }
 
 function choices(name, label, items, options = {}) {
@@ -402,6 +478,222 @@ function choices(name, label, items, options = {}) {
 
 function yesNo(name, label) {
   return choices(name, label, ['بله', 'خیر', 'نامشخص'], { columns: 3 });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
+function socialPlatformFor(platformId) {
+  return typeof platformId === 'string' ? SOCIAL_PLATFORM_BY_ID.get(platformId) || null : null;
+}
+
+function socialPlatformLogoMarkup(platform, className = 'social-platform-logo') {
+  if (!platform) return '';
+  const shape = SOCIAL_LOGO_SHAPES[platform.id] || '';
+  return `<svg class="${className} social-platform-logo--${platform.id}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${shape}</svg>`;
+}
+
+function normalizedSocialSearch(value) {
+  return String(value ?? '')
+    .toLocaleLowerCase('fa')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/\u200c/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeSocialLinkValue(platform, value) {
+  const rawValue = String(value ?? '').trim();
+  if (!platform || !rawValue) return '';
+
+  const withoutProtocol = rawValue.replace(/^(?:https?:)?\/\//i, '').replace(/^www\./i, '');
+  const loweredValue = withoutProtocol.toLowerCase();
+  const prefix = platform.prefix.toLowerCase();
+  if (loweredValue.startsWith(prefix)) return withoutProtocol.slice(platform.prefix.length).replace(/^\/+/, '');
+
+  for (const alias of platform.aliases) {
+    const loweredAlias = alias.toLowerCase().replace(/\/+$/, '');
+    if (loweredValue === loweredAlias) return '';
+    if (loweredValue.startsWith(`${loweredAlias}/`)) return withoutProtocol.slice(alias.length).replace(/^\/+/, '');
+  }
+
+  return rawValue.replace(/^\/+/, '');
+}
+
+function socialLinkUrl(platform, value) {
+  const normalizedValue = normalizeSocialLinkValue(platform, value);
+  return normalizedValue ? `https://${platform.prefix}${normalizedValue}` : '';
+}
+
+function savedSocialLinks() {
+  if (!Array.isArray(state.form.socialLinks)) return [];
+  return state.form.socialLinks.reduce((links, item) => {
+    if (!isPlainRecord(item)) return links;
+    const platform = socialPlatformFor(item.platform);
+    if (!platform) return links;
+    const rawValue = typeof item.value === 'string' ? item.value : typeof item.url === 'string' ? item.url : '';
+    links.push({ platform: platform.id, value: normalizeSocialLinkValue(platform, rawValue) });
+    return links;
+  }, []);
+}
+
+function socialPlatformOptionMarkup(platform) {
+  return `<button type="button" class="social-platform-option" role="option" data-social-platform-option data-social-search="${escapeHtml(platform.search)}" onclick="selectSocialPlatform(this,'${platform.id}')">${socialPlatformLogoMarkup(platform)}<span class="social-platform-option-name">${platform.name}</span><span class="social-platform-option-prefix" dir="ltr">${platform.prefix}</span></button>`;
+}
+
+function socialLinkRowMarkup(savedLink = {}) {
+  const platform = socialPlatformFor(savedLink.platform);
+  const rawValue = typeof savedLink.value === 'string' ? savedLink.value : typeof savedLink.url === 'string' ? savedLink.url : '';
+  const value = platform ? normalizeSocialLinkValue(platform, rawValue) : '';
+  const menuId = `social-platform-menu-${++socialLinkRowSequence}`;
+  const selectedMarkup = platform
+    ? `${socialPlatformLogoMarkup(platform)}<span class="sr-only">${platform.name}</span>`
+    : `${iconMarkup('link', 'social-platform-empty-icon')}<span class="social-platform-trigger-copy">انتخاب شبکه</span>`;
+  const prefixMarkup = platform
+    ? `<span class="social-link-prefix" dir="ltr">${platform.prefix}</span>`
+    : '<span class="social-link-prefix social-link-prefix--empty">نشانی</span>';
+  const inputState = platform ? '' : ' disabled';
+  const helper = platform
+    ? 'شناسه، مسیر پیام یا پست، یا لینک کامل را وارد کنید.'
+    : 'ابتدا پلتفرم موردنظر را انتخاب کنید.';
+
+  return `<div class="social-link-row${platform ? ' is-selected' : ''}" data-social-link-row data-platform="${platform ? platform.id : ''}">
+    <div class="social-link-control">
+      <button type="button" class="social-platform-trigger button-with-icon" aria-haspopup="dialog" aria-controls="${menuId}" aria-expanded="false" aria-label="${platform ? `تغییر پلتفرم؛ ${platform.name}` : 'انتخاب پلتفرم'}" onclick="toggleSocialPlatformMenu(this)">${selectedMarkup}${iconMarkup('chevron-down', 'social-platform-chevron')}</button>
+      <div class="social-link-entry">
+        ${prefixMarkup}
+        <input type="text" class="social-link-value" data-social-link-value dir="ltr" value="${escapeHtml(value)}"${inputState} maxlength="500" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="شناسه یا مسیر نشانی فضای مجازی" onblur="normalizeSocialLinkEntry(this)">
+      </div>
+      <button type="button" class="social-link-remove" aria-label="حذف این نشانی" onclick="removeSocialLink(this)">${iconMarkup('trash', 'social-link-remove-icon')}<span class="sr-only">حذف</span></button>
+    </div>
+    <div id="${menuId}" class="social-platform-menu" role="dialog" aria-label="انتخاب پلتفرم">
+      <div class="social-platform-search-wrap">
+        ${iconMarkup('search', 'social-platform-search-icon')}
+        <input type="search" class="social-platform-search" autocomplete="off" placeholder="جست‌وجوی پلتفرم" aria-label="جست‌وجوی پلتفرم">
+      </div>
+      <div class="social-platform-options" role="listbox" aria-label="فهرست پلتفرم‌ها">${SOCIAL_PLATFORMS.map(socialPlatformOptionMarkup).join('')}</div>
+    </div>
+    <p class="social-link-helper">${helper}</p>
+  </div>`;
+}
+
+function socialLinksField() {
+  const savedLinks = savedSocialLinks();
+  const rows = savedLinks.length ? savedLinks : [{}];
+  return `<div class="field-group social-links-field" data-social-links data-person-contact-fields>
+    <label>نشانی‌های فضای مجازی</label>
+    <p class="social-links-description">پلتفرم را انتخاب کنید و سپس شناسه، مسیر پیام یا پست، یا لینک آن را وارد کنید.</p>
+    <div class="social-link-list" data-social-link-list>${rows.map(socialLinkRowMarkup).join('')}</div>
+    <button type="button" class="social-add-button button-with-icon" onclick="addSocialLink()">${iconMarkup('plus', 'social-add-icon')}<span>افزودن نشانی دیگر</span></button>
+  </div>`;
+}
+
+function closeSocialPlatformMenus(except = null) {
+  document.querySelectorAll('.social-link-row.is-picker-open').forEach(row => {
+    if (row === except) return;
+    row.classList.remove('is-picker-open');
+    const trigger = row.querySelector('.social-platform-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function toggleSocialPlatformMenu(trigger) {
+  const row = trigger.closest('[data-social-link-row]');
+  if (!row) return;
+  const shouldOpen = !row.classList.contains('is-picker-open');
+  closeSocialPlatformMenus(row);
+  row.classList.toggle('is-picker-open', shouldOpen);
+  trigger.setAttribute('aria-expanded', String(shouldOpen));
+
+  if (shouldOpen) {
+    const search = row.querySelector('.social-platform-search');
+    if (search) {
+      search.value = '';
+      filterSocialPlatforms(search);
+      setTimeout(() => search.focus(), 0);
+    }
+  }
+}
+
+function filterSocialPlatforms(searchInput) {
+  const row = searchInput.closest('[data-social-link-row]');
+  if (!row) return;
+  const query = normalizedSocialSearch(searchInput.value);
+  row.querySelectorAll('[data-social-platform-option]').forEach(option => {
+    option.hidden = Boolean(query) && !normalizedSocialSearch(option.dataset.socialSearch).includes(query);
+  });
+}
+
+function selectSocialPlatform(option, platformId) {
+  const platform = socialPlatformFor(platformId);
+  const row = option.closest('[data-social-link-row]');
+  if (!platform || !row) return;
+  const currentInput = row.querySelector('[data-social-link-value]');
+  const value = currentInput ? currentInput.value : '';
+  row.outerHTML = socialLinkRowMarkup({ platform: platform.id, value: normalizeSocialLinkValue(platform, value) });
+  persistReportDraft();
+}
+
+function normalizeSocialLinkEntry(input) {
+  const row = input.closest('[data-social-link-row]');
+  const platform = row ? socialPlatformFor(row.dataset.platform) : null;
+  if (!platform) return;
+  input.value = normalizeSocialLinkValue(platform, input.value);
+  persistReportDraft();
+}
+
+function addSocialLink() {
+  const list = document.querySelector('[data-social-link-list]');
+  if (!list) return;
+  collectForm();
+  list.insertAdjacentHTML('beforeend', socialLinkRowMarkup());
+  const trigger = list.lastElementChild && list.lastElementChild.querySelector('.social-platform-trigger');
+  if (trigger) toggleSocialPlatformMenu(trigger);
+  persistReportDraft();
+}
+
+function removeSocialLink(button) {
+  const row = button.closest('[data-social-link-row]');
+  const list = row && row.parentElement;
+  if (!row || !list) return;
+  if (list.children.length === 1) row.outerHTML = socialLinkRowMarkup();
+  else row.remove();
+  collectForm();
+  persistReportDraft();
+}
+
+function collectSocialLinks(data) {
+  const group = document.querySelector('[data-social-links]');
+  if (!group) return;
+
+  delete data.social;
+  delete data.socialLinks;
+  const links = [];
+  group.querySelectorAll('[data-social-link-row]').forEach(row => {
+    const platform = socialPlatformFor(row.dataset.platform);
+    if (!platform) return;
+    const input = row.querySelector('[data-social-link-value]');
+    const value = normalizeSocialLinkValue(platform, input ? input.value : '');
+    links.push({ platform: platform.id, value, url: socialLinkUrl(platform, value) });
+  });
+  if (links.length) data.socialLinks = links;
+}
+
+function hasMeaningfulFormValue() {
+  return Object.entries(state.form).some(([name, value]) => {
+    if (name === 'socialLinks' && Array.isArray(value)) {
+      return value.some(link => isPlainRecord(link) && typeof link.value === 'string' && link.value.trim());
+    }
+    return typeof value === 'string' && value.trim();
+  });
 }
 
 function isValidNationalId(value) {
@@ -428,8 +720,11 @@ function fieldValidationMessage(element) {
   if (element.dataset.validation === 'age' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 1 || Number(digits) > 120)) {
     return `${label} باید عددی بین ۱ تا ۱۲۰ باشد.`;
   }
-  if (element.dataset.validation === 'height' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 30 || Number(digits) > 250)) {
-    return `${label} باید عددی تا ۳ رقم و بین ۳۰ تا ۲۵۰ سانتی‌متر باشد.`;
+  if (element.dataset.validation === 'height' && (!/^\d{1,3}$/.test(digits) || Number(digits) < 1 || Number(digits) > 250)) {
+    return `${label} باید عددی تا ۳ رقم و حداکثر ۲۵۰ باشد.`;
+  }
+  if (element.dataset.validation === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    return `${label} را به شکل یک ایمیل معتبر وارد کنید.`;
   }
   return '';
 }
@@ -506,14 +801,11 @@ function personForm() {
       `${field('firstName','نام','text',{textOnly:true})}${field('lastName','نام خانوادگی','text',{textOnly:true})}${field('nickname','شهرت','text',{textOnly:true})}${field('nationalId','کد ملی','text',{numeric:true,maxLength:10,validation:'national-id'})}${field('age','سن','text',{numeric:true,maxLength:3,validation:'age'})}${choices('gender','جنسیت',['مرد','زن','نامشخص'],{columns:3})}`,
       'اطلاعات پایه برای شناسایی فرد را وارد کنید.'),
     formSection('مشخصات ظاهری',
-      `${field('height','قد (سانتی‌متر)','text',{numeric:true,maxLength:3,validation:'height',placeholder:'مثلاً ۱۷۵'})}${choices('bodyBuild','اندام',['لاغر','معمولی','چاق'],{columns:3})}${field('face','رنگ چهره','text',{textOnly:true})}${field('hairStatus','وضعیت موی سر','text',{textOnly:true})}${field('hairColor','رنگ مو','text',{textOnly:true})}${field('beard','محاسن','text',{textOnly:true})}${field('appearance','ویژگی خاص','textarea')}`,
+      `${field('height','قد','text',{numeric:true,maxLength:3,maxValue:250,validation:'height'})}${choices('bodyBuild','اندام',['لاغر','معمولی','چاق'],{columns:3})}${field('face','رنگ پوست','text',{textOnly:true})}${field('hairColor','رنگ مو','text',{textOnly:true})}${field('hairStatus','وضعیت موی سر','text',{textOnly:true})}${field('beard','محاسن','text',{textOnly:true})}${field('appearance','ویژگی خاص','textarea',{placeholder:'شامل زخم، تتو، معلولیت و موارد بارز دیگر'})}`,
       'ویژگی‌های ظاهری قابل مشاهده را ثبت کنید.'),
-    formSection('ارتباط و فضای مجازی',
-      `${field('phoneFixed','تلفن ثابت','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneMobile','تلفن همراه','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneWork','تلفن محل کار','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('phoneHome','تلفن منزل','text',{numeric:true,maxLength:11,validation:'phone',placeholder:'۱۱ رقم'})}${field('social','نشانی‌های فضای مجازی','textarea')}`,
-      'راه‌های ارتباطی یا نشانی‌های مرتبط را وارد کنید.'),
-    formSection('نشانی‌های مرتبط',
-      `${field('workAddress','آدرس محل کار','textarea')}${field('homeAddress','آدرس منزل','textarea')}`,
-      'نشانی‌های شناخته‌شده و مرتبط با فرد را وارد کنید.')
+    formSection('پل‌های ارتباطی',
+      `${field('phoneMobile','شماره همراه','text',{numeric:true,maxLength:11,validation:'phone'})}${field('phoneFixed','شماره ثابت محل سکونت','text',{numeric:true,maxLength:11,validation:'phone'})}${field('homeAddress','نشانی محل سکونت','textarea')}${field('phoneWork','شماره ثابت محل کار','text',{numeric:true,maxLength:11,validation:'phone'})}${field('workAddress','نشانی محل کار','textarea')}${field('email','نشانی پست الکترونیک','email',{validation:'email',placeholder:'example@gmail.com',ltr:true})}${socialLinksField()}`,
+      'شماره‌های تماس و نشانی‌های مرتبط را وارد کنید.')
   ];
 }
 
@@ -672,6 +964,7 @@ function collectForm() {
   const data = { ...state.form };
   delete data.priority;
   delete data.weight;
+  if (document.querySelector('[data-person-contact-fields]')) delete data.phoneHome;
   document.querySelectorAll('#formBody [data-field], #incidentReportBody [data-field]').forEach(element => {
     const value = element.value.trim();
     if (value) data[element.dataset.field] = value;
@@ -682,11 +975,13 @@ function collectForm() {
     if (selected) data[row.dataset.choice] = selected.dataset.value || selected.textContent.trim();
     else delete data[row.dataset.choice];
   });
+  collectSocialLinks(data);
   state.form = data;
 }
 
 function restoreFormValues() {
   Object.entries(state.form).forEach(([name, value]) => {
+    if (typeof value !== 'string') return;
     const fieldElement = document.querySelector(`#formBody [data-field="${CSS.escape(name)}"], #incidentReportBody [data-field="${CSS.escape(name)}"]`);
     if (fieldElement) fieldElement.value = value;
     const row = document.querySelector(`#formBody [data-choice="${CSS.escape(name)}"], #incidentReportBody [data-choice="${CSS.escape(name)}"]`);
@@ -705,7 +1000,7 @@ function restoreFormValues() {
 function continueForm() {
   collectForm();
   if (!validateVisibleFormFields()) return;
-  if (!Object.keys(state.form).length) return alert('حداقل یکی از اطلاعات گزارش را وارد کنید.');
+  if (!hasMeaningfulFormValue()) return alert('حداقل یکی از اطلاعات گزارش را وارد کنید.');
   openTime();
 }
 
