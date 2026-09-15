@@ -138,7 +138,7 @@ require __DIR__ . '/includes/header.php';
     <div id="approxTime" class="conditional-fields" hidden>
       <div class="field-group"><label>زمان تقریبی</label><input id="approxText" class="field-input" type="text"></div>
     </div>
-    <button class="primary-button page-action button-with-icon" onclick="continueTime()" type="button"><?= buttonIcon('check', 'button-icon action-icon') ?><span>تأیید زمان</span></button>
+    <button class="primary-button page-action" onclick="continueTime()" type="button">تایید زمان وقوع</button>
   </main>
 </section>
 
@@ -159,7 +159,7 @@ require __DIR__ . '/includes/header.php';
       <div class="field-group"><label>آدرس</label><textarea id="address" class="field-textarea"></textarea></div>
     </div>
     <div id="locationStatus" class="status" aria-live="polite"></div>
-    <button class="primary-button page-action button-with-icon" onclick="continueLocation()" type="button"><?= buttonIcon('check', 'button-icon action-icon') ?><span>تأیید مکان</span></button>
+    <button class="primary-button page-action" onclick="continueLocation()" type="button">تایید مکان وقوع</button>
   </main>
 </section>
 
@@ -169,7 +169,7 @@ require __DIR__ . '/includes/header.php';
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="3" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1>گزارش وقوع</h1></div>
     <div id="incidentReportBody"></div>
-    <button class="primary-button page-action button-with-icon" onclick="continueIncidentReport()" type="button"><?= buttonIcon('check', 'button-icon action-icon') ?><span>تأیید گزارش وقوع</span></button>
+    <button class="primary-button page-action" onclick="continueIncidentReport()" type="button">تایید گزارش وقوع</button>
   </main>
 </section>
 
@@ -184,7 +184,7 @@ require __DIR__ . '/includes/header.php';
     </label>
     <input id="documentInput" type="file" accept="image/*" multiple hidden onchange="addDocuments(this)">
     <div id="documentList" class="document-list"></div>
-    <button class="primary-button button-with-icon" onclick="sendReport()" type="button"><?= buttonIcon('send', 'button-icon action-icon') ?><span>تأیید و ثبت گزارش</span></button>
+    <button class="primary-button" onclick="sendReport()" type="button">تأیید و ثبت گزارش</button>
     <div id="successBox" class="success-box" aria-live="polite"></div>
   </main>
 </section>

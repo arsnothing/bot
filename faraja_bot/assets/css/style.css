@@ -409,6 +409,17 @@ html,body{background:var(--bg);color:var(--text)}
 #formPage .form-section-fields .field-input[type="email"]{
   text-align:left;
 }
+#formPage .form-section-fields .field-input[type="email"]::placeholder{
+  text-align:right;
+  color:#a8b3ad;
+  opacity:1;
+}
+#formPage .form-section-fields [data-field="appearance"]::placeholder{
+  color:#aab5af;
+  font-size:11px;
+  font-weight:400;
+  opacity:1;
+}
 #formPage .form-section-fields .field-textarea{
   min-height:52px;
   height:52px;
@@ -621,7 +632,7 @@ html,body{background:var(--bg);color:var(--text)}
 }
 #formPage .social-platform-option{
   display:grid;
-  grid-template-columns:26px minmax(0,1fr) auto;
+  grid-template-columns:28px minmax(0,1fr) auto;
   align-items:center;
   gap:7px;
   min-width:0;
@@ -657,37 +668,20 @@ html,body{background:var(--bg);color:var(--text)}
   white-space:nowrap;
 }
 #formPage .social-platform-logo{
-  width:26px;
-  height:26px;
-  padding:4px;
+  display:block;
+  flex:0 0 28px;
+  width:28px;
+  height:28px;
+  padding:2px;
+  border:1px solid #e0e9e4;
   border-radius:8px;
-  background:#65796e;
-  color:#fff;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.65;
-  stroke-linecap:round;
-  stroke-linejoin:round;
+  background:#fff;
+  object-fit:contain;
+  object-position:center;
 }
-#formPage .social-platform-logo--telegram{background:#229ed9}
-#formPage .social-platform-logo--instagram{background:linear-gradient(135deg,#7a3db8,#d62976 52%,#f58529)}
-#formPage .social-platform-logo--x{background:#141414}
-#formPage .social-platform-logo--whatsapp{background:#25d366}
-#formPage .social-platform-logo--youtube{background:#ff0033}
-#formPage .social-platform-logo--facebook{background:#1877f2}
-#formPage .social-platform-logo--linkedin{background:#0a66c2}
-#formPage .social-platform-logo--github{background:#24292f}
-#formPage .social-platform-logo--tiktok{background:#111}
-#formPage .social-platform-logo--threads{background:#171717}
-#formPage .social-platform-logo--discord{background:#5865f2}
-#formPage .social-platform-logo--eitaa{background:#f28b27}
-#formPage .social-platform-logo--bale{background:#1b95d2}
-#formPage .social-platform-logo--soroush{background:#30a852}
-#formPage .social-platform-logo--rubika{background:#e53945}
-#formPage .social-platform-logo--igap{background:#0e9bad}
-#formPage .social-platform-logo--gap{background:#7254a3}
-#formPage .social-platform-logo--virasty{background:#18847d}
-#formPage .social-platform-logo--aparat{background:#ed145b}
+#formPage .social-platform-trigger .social-platform-logo{
+  flex-basis:28px;
+}
 #formPage .social-add-button{
   display:inline-flex;
   align-items:center;
@@ -859,21 +853,11 @@ html,body{background:var(--bg);color:var(--text)}
 #locationPage .location-choice:hover .mini-svg{
   background:#dcece2;
 }
-.primary-button .action-icon{
-  width:19px;
-  height:19px;
-}
 #formPage .form-actions .primary-button,
 #formPage .secondary-button{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
-}
-#formPage .form-actions .action-icon,
-#formPage .secondary-button .action-icon{
-  width:18px;
-  height:18px;
 }
 #documentsPage .document-upload .upload-icon{
   width:46px;
