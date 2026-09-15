@@ -174,13 +174,17 @@ require __DIR__ . '/includes/header.php';
     <button class="back-button button-with-icon" onclick="backFromDocuments()" type="button"><?= buttonIcon('arrow-previous', 'button-icon back-icon') ?><span>بازگشت</span></button>
     <div class="stepper report-stepper" data-report-roadmap data-standard-step="3" data-people-step="4" aria-label="مراحل ثبت گزارش"></div>
     <div class="page-head"><h1 id="documentsPageTitle">مستندات گزارش</h1></div>
-    <label class="document-upload" for="documentInput">
-      <?= buttonIcon('document-upload', 'button-icon upload-icon') ?>
-      <strong>بارگذاری مستندات</strong>
-      <span class="document-upload-help">یک یا چند فایل را انتخاب کنید</span>
+    <label class="document-upload document-upload-card" for="documentInput">
+      <span class="document-upload-icon-wrap" aria-hidden="true"><?= buttonIcon('document-upload', 'button-icon upload-icon') ?></span>
+      <span class="document-upload-copy">
+        <strong>بارگذاری مستندات</strong>
+        <span id="documentUploadHelp" class="document-upload-help">یک یا چند فایل را هم‌زمان انتخاب کنید</span>
+      </span>
+      <span class="document-upload-limit">حداکثر ۱۰ فایل · هر فایل تا ۱۰۰ مگابایت</span>
     </label>
-    <input id="documentInput" type="file" multiple hidden onchange="addDocuments(this)">
-    <div id="documentList" class="document-list"></div>
+    <input id="documentInput" type="file" multiple hidden aria-describedby="documentUploadHelp" onchange="addDocuments(this)">
+    <div id="documentList" class="document-list" aria-live="polite"></div>
+    <div id="documentTransferStatus" class="document-transfer-status" hidden aria-live="polite"></div>
     <button class="primary-button" onclick="sendReport()" type="button">تایید و ثبت نهایی</button>
     <div id="successBox" class="success-box" aria-live="polite"></div>
   </main>

@@ -518,30 +518,36 @@ function escapeHtml(value) {
 }
 
 const MAX_DOCUMENTS = 10;
-const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 100 * 1024 * 1024;
+const MAX_VEHICLES = 10;
 
 const VEHICLE_KIND_OPTIONS = Object.freeze([
   { value: 'خودرو', label: 'خودرو', search: 'خودرو سواری وانت کامیون اتوبوس' },
   { value: 'موتورسیکلت', label: 'موتورسیکلت', search: 'موتور موتور سیکلت' }
 ]);
 
+// Persian labels, colors, letters, and plate structures mirror the active Iranian formats.
+// The blue country band is rendered for every format, including motorcycle and transit plates.
 const VEHICLE_PLATE_TEMPLATES = Object.freeze([
-  { id: 'private', label: 'پلاک شخصی', search: 'ملی شخصی سواری خودرو', layout: 'national', tone: 'light', sample: '۱۲ ب ۳۴۵ | ۶۷' },
-  { id: 'motorcycle', label: 'پلاک موتورسیکلت', search: 'موتور موتورسیکلت', layout: 'motorcycle', tone: 'light', sample: '۱۲۳ | ۴۵۶' },
-  { id: 'public', label: 'عمومی و تاکسی', search: 'عمومی تاکسی ع', layout: 'national', tone: 'yellow', fixedLetter: 'ع', sample: '۱۲ ع ۳۴۵ | ۶۷' },
-  { id: 'government', label: 'دولتی', search: 'دولتی الف', layout: 'national', tone: 'red', fixedLetter: 'الف', sample: '۱۲ الف ۳۴۵ | ۶۷' },
-  { id: 'police', label: 'نیروی انتظامی', search: 'پلیس انتظامی پ', layout: 'national', tone: 'green', fixedLetter: 'پ', sample: '۱۲ پ ۳۴۵ | ۶۷' },
-  { id: 'irgc', label: 'سپاه', search: 'سپاه ث', layout: 'national', tone: 'green', fixedLetter: 'ث', sample: '۱۲ ث ۳۴۵ | ۶۷' },
-  { id: 'army', label: 'ارتش', search: 'ارتش ش', layout: 'national', tone: 'khaki', fixedLetter: 'ش', sample: '۱۲ ش ۳۴۵ | ۶۷' },
-  { id: 'armed-forces', label: 'ستاد کل نیروهای مسلح', search: 'نیروهای مسلح ستاد کل ف', layout: 'national', tone: 'blue', fixedLetter: 'ف', sample: '۱۲ ف ۳۴۵ | ۶۷' },
-  { id: 'defense', label: 'وزارت دفاع', search: 'دفاع ز', layout: 'national', tone: 'blue', fixedLetter: 'ز', sample: '۱۲ ز ۳۴۵ | ۶۷' },
-  { id: 'temporary-persian', label: 'گذر موقت (گ)', search: 'گذر موقت گ', layout: 'national', tone: 'light', fixedLetter: 'گ', sample: '۱۲ گ ۳۴۵ | ۶۷' },
-  { id: 'temporary-latin', label: 'گذر موقت جدید (لاتین)', search: 'گذر موقت جدید انگلیسی لاتین temporary international', layout: 'latin', tone: 'light', sample: 'TEMPORARY 12A-34567' },
-  { id: 'diplomatic', label: 'دیپلماتیک (D)', search: 'دیپلماتیک سفارت انگلیسی D', layout: 'national', tone: 'blue', fixedLetter: 'D', preserveLetter: true, sample: '۱۲ D ۳۴۵ | ۶۷' },
-  { id: 'service', label: 'خدمات سفارت (S)', search: 'سرویس خدمت سفارت انگلیسی S', layout: 'national', tone: 'blue', fixedLetter: 'S', preserveLetter: true, sample: '۱۲ S ۳۴۵ | ۶۷' },
-  { id: 'protocol', label: 'تشریفات / PROTOCOL', search: 'تشریفات protocol', layout: 'protocol', tone: 'red', sample: 'PROTOCOL | ۱۲۳۴' },
-  { id: 'free-zone', label: 'منطقه آزاد', search: 'منطقه آزاد free zone', layout: 'national', tone: 'turquoise', sample: '۱۲ ب ۳۴۵ | ۶۷' },
-  { id: 'agricultural', label: 'ادوات کشاورزی', search: 'کشاورزی ک ماشین آلات', layout: 'national', tone: 'yellow', fixedLetter: 'ک', sample: '۱۲ ک ۳۴۵ | ۶۷' }
+  { id: 'private', label: 'پلاک شخصی / ملی', search: 'ملی شخصی سواری خودرو ب ج د س ص ط ق ل م ن و ه ی', layout: 'national', tone: 'light', vehicleKinds: ['خودرو'] },
+  { id: 'disabled', label: 'معلولین و جانبازان', search: 'معلولین جانبازان ژ ویلچر', layout: 'national', tone: 'light', fixedLetter: 'ژ', vehicleKinds: ['خودرو'] },
+  { id: 'taxi', label: 'تاکسی', search: 'تاکسی ت عمومی زرد', layout: 'national', tone: 'yellow', fixedLetter: 'ت', vehicleKinds: ['خودرو'] },
+  { id: 'public', label: 'خودروی عمومی', search: 'عمومی ع اتوبوس مینی بوس کامیون زرد', layout: 'national', tone: 'yellow', fixedLetter: 'ع', vehicleKinds: ['خودرو'] },
+  { id: 'government', label: 'دولتی', search: 'دولتی اداری الف قرمز', layout: 'national', tone: 'red', fixedLetter: 'الف', vehicleKinds: ['خودرو'] },
+  { id: 'police', label: 'نیروی انتظامی', search: 'پلیس انتظامی پ سبز', layout: 'national', tone: 'green', fixedLetter: 'پ', vehicleKinds: ['خودرو'] },
+  { id: 'irgc', label: 'سپاه پاسداران', search: 'سپاه پاسداران ث سبز', layout: 'national', tone: 'green', fixedLetter: 'ث', vehicleKinds: ['خودرو'] },
+  { id: 'army', label: 'ارتش', search: 'ارتش ش خاکی', layout: 'national', tone: 'khaki', fixedLetter: 'ش', vehicleKinds: ['خودرو'] },
+  { id: 'armed-forces', label: 'ستاد کل نیروهای مسلح', search: 'نیروهای مسلح ستاد کل ف آبی', layout: 'national', tone: 'blue', fixedLetter: 'ف', vehicleKinds: ['خودرو'] },
+  { id: 'defense', label: 'وزارت دفاع', search: 'دفاع ز آبی', layout: 'national', tone: 'blue', fixedLetter: 'ز', vehicleKinds: ['خودرو'] },
+  { id: 'agricultural', label: 'ادوات کشاورزی', search: 'کشاورزی ک ماشین آلات زرد', layout: 'national', tone: 'yellow', fixedLetter: 'ک', vehicleKinds: ['خودرو'] },
+  { id: 'temporary-persian', label: 'گذر موقت (گ)', search: 'گذر موقت گ سفید', layout: 'national', tone: 'light', fixedLetter: 'گ', vehicleKinds: ['خودرو'] },
+  { id: 'temporary-latin', label: 'گذر موقت جدید (لاتین)', search: 'گذر موقت جدید انگلیسی لاتین temporary transit international', layout: 'latin', tone: 'light', vehicleKinds: ['خودرو'] },
+  { id: 'diplomatic', label: 'دیپلماتیک (D)', search: 'دیپلماتیک سفارت انگلیسی D آبی', layout: 'national', tone: 'blue', fixedLetter: 'D', preserveLetter: true, vehicleKinds: ['خودرو'] },
+  { id: 'service', label: 'خدمات سفارت (S)', search: 'سرویس خدمت سفارت انگلیسی S آبی', layout: 'national', tone: 'blue', fixedLetter: 'S', preserveLetter: true, vehicleKinds: ['خودرو'] },
+  { id: 'protocol', label: 'تشریفات / PROTOCOL', search: 'تشریفات protocol قرمز', layout: 'protocol', tone: 'red', vehicleKinds: ['خودرو'] },
+  { id: 'free-zone', label: 'منطقه آزاد تجاری', search: 'منطقه آزاد تجاری free zone', layout: 'free-zone', tone: 'light', vehicleKinds: ['خودرو'] },
+  { id: 'historical', label: 'خودروی تاریخی', search: 'تاریخی کلاسیک قهوه ای', layout: 'historical', tone: 'brown', vehicleKinds: ['خودرو'] },
+  { id: 'motorcycle', label: 'پلاک موتورسیکلت', search: 'موتور موتورسیکلت', layout: 'motorcycle', tone: 'light', vehicleKinds: ['موتورسیکلت'] }
 ]);
 
 function searchableSelectOptionMarkup(item, selectedValue = '') {
@@ -676,10 +682,14 @@ function handleSearchableSelectChange(component) {
     state.location.province = province;
     state.location.city = '';
     updateLocationCountyPicker(province);
+    return;
   }
-  if (name === 'vehiclePlateTemplate') {
-    const field = component.closest('[data-vehicle-plate-field]');
-    if (field) renderVehiclePlateEditor(field, searchableSelectValue(component));
+  if (name && name.startsWith('vehicleKind-')) {
+    updateVehicleKind(component);
+    return;
+  }
+  if (name && name.startsWith('vehiclePlateTemplate-')) {
+    updateVehiclePlateTemplate(component);
   }
 }
 
@@ -699,25 +709,56 @@ function vehiclePlateTemplateFor(templateId) {
   return VEHICLE_PLATE_TEMPLATES.find(template => template.id === templateId) || null;
 }
 
+function vehiclePlateTemplatesForKind(kind) {
+  if (!VEHICLE_KIND_OPTIONS.some(item => item.value === kind)) return [];
+  return VEHICLE_PLATE_TEMPLATES.filter(template => Array.isArray(template.vehicleKinds) && template.vehicleKinds.includes(kind));
+}
+
+function iranFlagMarkup() {
+  return `<svg class="iran-flag" viewBox="0 0 30 20" aria-hidden="true" focusable="false">
+    <rect width="30" height="6.67" y="0" fill="#239f40"/>
+    <rect width="30" height="6.66" y="6.67" fill="#fff"/>
+    <rect width="30" height="6.67" y="13.33" fill="#da1e37"/>
+    <path d="M15 6.4c-.9 1.15-1.2 2.1-1.2 3.1 0 1.5.58 2.66 1.2 4.1.62-1.44 1.2-2.6 1.2-4.1 0-1-.3-1.95-1.2-3.1Zm-2.6 4.02h5.2v1.03h-5.2zM14.48 4.9h1.04v10.2h-1.04z" fill="#da1e37"/>
+  </svg>`;
+}
+
+function iranPlateCountryBandMarkup() {
+  return `<span class="iran-plate-country-band" data-preserve-latin="true" aria-hidden="true">${iranFlagMarkup()}<b>I.R. IRAN</b><em>ایران</em></span>`;
+}
+
 function vehiclePlatePreviewMarkup(template, parts = {}, isOption = false) {
-  const slot = (name, fallback, preserveLatin = false) => {
-    const value = typeof parts[name] === 'string' && parts[name] ? parts[name] : fallback;
-    return `<span data-plate-preview-part="${name}" data-default-value="${escapeHtml(fallback)}"${preserveLatin ? ' data-preserve-latin="true" dir="ltr"' : ''}>${escapeHtml(value)}</span>`;
+  if (!template) return '';
+  const values = isPlainRecord(parts) ? parts : {};
+  const slot = (name, fallback, options = {}) => {
+    const value = typeof values[name] === 'string' && values[name] ? values[name] : fallback;
+    const className = options.className ? ` ${options.className}` : '';
+    const preserveLatin = options.preserveLatin ? ' data-preserve-latin="true" dir="ltr"' : '';
+    return `<span class="vehicle-plate-value${className}" data-plate-preview-part="${name}" data-default-value="${escapeHtml(fallback)}"${preserveLatin}>${escapeHtml(value)}</span>`;
   };
   const className = `vehicle-plate-preview vehicle-plate-preview--${template.tone}${isOption ? ' vehicle-plate-preview--sample' : ''}`;
+  const countryBand = iranPlateCountryBandMarkup();
+
   if (template.layout === 'latin') {
-    return `<span class="${className}" data-preserve-latin="true" dir="ltr"><small>TEMPORARY</small>${slot('latin', '12A-34567', true)}</span>`;
+    return `<span class="${className} vehicle-plate-preview--latin" data-preserve-latin="true" dir="ltr">${countryBand}<span class="vehicle-plate-latin-copy"><small>TEMPORARY</small>${slot('latin', '12A-34567', { preserveLatin: true })}</span></span>`;
   }
   if (template.layout === 'motorcycle') {
-    return `<span class="${className}">${slot('first', '۱۲۳')}${slot('second', '۴۵۶')}<small>IRAN</small></span>`;
+    return `<span class="${className} vehicle-plate-preview--motorcycle">${countryBand}<span class="vehicle-plate-motorcycle-copy">${slot('first', '۱۲۳')}${slot('second', '۴۵۶')}<small>موتورسیکلت</small></span></span>`;
   }
   if (template.layout === 'protocol') {
-    return `<span class="${className}" data-preserve-latin="true"><small>PROTOCOL</small>${slot('number', '۱۲۳۴')}</span>`;
+    return `<span class="${className} vehicle-plate-preview--protocol" data-preserve-latin="true" dir="ltr">${countryBand}<span class="vehicle-plate-protocol-copy"><small>PROTOCOL</small>${slot('number', '1234', { preserveLatin: true })}</span></span>`;
   }
+  if (template.layout === 'free-zone') {
+    return `<span class="${className} vehicle-plate-preview--free-zone">${countryBand}<span class="vehicle-plate-free-zone-copy"><small>منطقه آزاد</small>${slot('number', '۱۲۳۴۵')}${slot('zone', 'کیش')}</span></span>`;
+  }
+  if (template.layout === 'historical') {
+    return `<span class="${className} vehicle-plate-preview--historical">${countryBand}<span class="vehicle-plate-historical-copy"><small>تاریخی</small>${slot('number', '۱۲۳۴۵')}</span></span>`;
+  }
+
   const letter = template.fixedLetter
-    ? `<span${template.preserveLetter ? ' data-preserve-latin="true" dir="ltr"' : ''}>${escapeHtml(template.fixedLetter)}</span>`
-    : slot('letter', 'ب');
-  return `<span class="${className}">${slot('right', '۱۲')}${letter}${slot('left', '۳۴۵')}<small>${slot('region', '۶۷')}</small></span>`;
+    ? `<span class="vehicle-plate-letter"${template.preserveLetter ? ' data-preserve-latin="true" dir="ltr"' : ''}>${escapeHtml(template.fixedLetter)}</span>`
+    : slot('letter', 'ب', { className: 'vehicle-plate-letter' });
+  return `<span class="${className}">${countryBand}${slot('right', '۱۲')}${letter}${slot('left', '۳۴۵')}<span class="vehicle-plate-region">${slot('region', '۶۷')}</span></span>`;
 }
 
 function vehiclePlateInputMarkup(part, label, options = {}, value = '') {
@@ -732,7 +773,7 @@ function vehiclePlateInputMarkup(part, label, options = {}, value = '') {
 function vehiclePlateEditorMarkup(templateId, savedParts = {}) {
   const template = vehiclePlateTemplateFor(templateId);
   if (!template) {
-    return `<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>قالب پلاک را انتخاب کنید یا گزینه «فاقد پلاک» را علامت بزنید.</p></div>`;
+    return '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>قالب پلاک این وسیله نقلیه را انتخاب کنید.</p></div>';
   }
 
   let inputs = '';
@@ -742,6 +783,8 @@ function vehiclePlateEditorMarkup(templateId, savedParts = {}) {
     inputs = `${vehiclePlateInputMarkup('first', 'سه رقم اول', { numeric: true, maxLength: 3 }, savedParts.first || '')}${vehiclePlateInputMarkup('second', 'سه رقم دوم', { numeric: true, maxLength: 3 }, savedParts.second || '')}`;
   } else if (template.layout === 'latin') {
     inputs = vehiclePlateInputMarkup('latin', 'شماره لاتین پلاک', { latin: true, maxLength: 16 }, savedParts.latin || '');
+  } else if (template.layout === 'free-zone') {
+    inputs = `${vehiclePlateInputMarkup('number', 'شماره پنج رقمی', { numeric: true, maxLength: 5 }, savedParts.number || '')}${vehiclePlateInputMarkup('zone', 'نام منطقه آزاد', { textOnly: true, maxLength: 20 }, savedParts.zone || '')}`;
   } else {
     inputs = vehiclePlateInputMarkup('number', 'شماره پلاک', { numeric: true, maxLength: 5 }, savedParts.number || '');
   }
@@ -749,48 +792,211 @@ function vehiclePlateEditorMarkup(templateId, savedParts = {}) {
   return `<div class="vehicle-plate-editor" data-vehicle-plate-editor data-plate-template="${template.id}">
     <div class="vehicle-plate-preview-wrap" aria-label="نمایش قالب انتخاب‌شده">${vehiclePlatePreviewMarkup(template, savedParts)}</div>
     <div class="vehicle-plate-inputs vehicle-plate-inputs--${template.layout}">${inputs}</div>
-    <p class="vehicle-plate-hint">${template.layout === 'latin' ? 'شماره یا حروف لاتین دیده‌شده روی پلاک را وارد کنید.' : 'بخش‌های قابل مشاهده پلاک را وارد کنید؛ تکمیل همه بخش‌ها الزامی نیست.'}</p>
   </div>`;
 }
 
-function vehiclePlateField() {
-  const saved = isPlainRecord(state.form.vehiclePlate) ? state.form.vehiclePlate : {};
-  const template = vehiclePlateTemplateFor(saved.template);
-  const noPlate = state.form.vehicleNoPlate === 'بله';
-  const options = VEHICLE_PLATE_TEMPLATES.map(item => ({
+function normalizedVehiclePlate(value, kind = '') {
+  if (!isPlainRecord(value)) return null;
+  const template = vehiclePlateTemplateFor(value.template);
+  if (!template || (kind && !vehiclePlateTemplatesForKind(kind).some(item => item.id === template.id))) return null;
+  const parts = {};
+  if (isPlainRecord(value.parts)) {
+    Object.entries(value.parts).forEach(([part, partValue]) => {
+      if (typeof partValue === 'string' && partValue.trim()) parts[part] = partValue.trim();
+    });
+  }
+  if (template.fixedLetter) parts.letter = template.fixedLetter;
+  return { template: template.id, label: template.label, parts };
+}
+
+function normalizedVehicleRecord(value) {
+  const source = isPlainRecord(value) ? value : {};
+  const rawPlate = isPlainRecord(source.plate) ? source.plate : (isPlainRecord(source.vehiclePlate) ? source.vehiclePlate : null);
+  let kind = VEHICLE_KIND_OPTIONS.some(item => item.value === source.kind) ? source.kind : '';
+  if (!kind && rawPlate && vehiclePlateTemplateFor(rawPlate.template)) {
+    kind = rawPlate.template === 'motorcycle' ? 'موتورسیکلت' : 'خودرو';
+  }
+  const record = {};
+  if (kind) record.kind = kind;
+  ['type', 'color', 'specialFeature'].forEach(key => {
+    if (typeof source[key] === 'string' && source[key].trim()) record[key] = source[key].trim();
+  });
+  const noPlate = source.noPlate === true || source.noPlate === 'بله' || source.vehicleNoPlate === 'بله';
+  if (noPlate) record.noPlate = true;
+  else {
+    const plate = normalizedVehiclePlate(rawPlate, kind);
+    if (plate) record.plate = plate;
+  }
+  return record;
+}
+
+function vehicleRecordHasMeaningfulValue(vehicle) {
+  if (!isPlainRecord(vehicle)) return false;
+  return Boolean(
+    vehicle.kind || vehicle.type || vehicle.color || vehicle.specialFeature || vehicle.noPlate ||
+    (isPlainRecord(vehicle.plate) && vehicle.plate.template)
+  );
+}
+
+function clearLegacyPersonVehicleFields(data) {
+  ['vehicleKind', 'vehicleType', 'vehicleColor', 'vehiclePlate', 'vehicleNoPlate', 'vehicleSpecialFeature'].forEach(key => delete data[key]);
+}
+
+function ensurePersonVehicles() {
+  const existing = state.form.vehicles;
+  let vehicles;
+  if (Array.isArray(existing)) {
+    vehicles = existing.slice(0, MAX_VEHICLES).map(normalizedVehicleRecord);
+  } else {
+    const legacy = normalizedVehicleRecord({
+      kind: state.form.vehicleKind,
+      type: state.form.vehicleType,
+      color: state.form.vehicleColor,
+      plate: state.form.vehiclePlate,
+      noPlate: state.form.vehicleNoPlate,
+      specialFeature: state.form.vehicleSpecialFeature
+    });
+    vehicles = vehicleRecordHasMeaningfulValue(legacy) ? [legacy] : [];
+  }
+  if (!vehicles.length) vehicles = [{}];
+  state.form.vehicles = vehicles;
+  clearLegacyPersonVehicleFields(state.form);
+  return vehicles;
+}
+
+function vehicleTextFieldMarkup(vehicle, key, label, options = {}) {
+  const value = typeof vehicle[key] === 'string' ? vehicle[key] : '';
+  const placeholder = options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : '';
+  if (options.textarea) {
+    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea" data-vehicle-field="${key}" data-auto-resize="true"${placeholder}>${escapeHtml(value)}</textarea></div>`;
+  }
+  return `<div class="field-group"><label>${label}</label><input class="field-input" type="text" data-vehicle-field="${key}"${placeholder} value="${escapeHtml(value)}"></div>`;
+}
+
+function vehiclePlateField(vehicle, index) {
+  const kind = vehicle.kind || '';
+  const availableTemplates = vehiclePlateTemplatesForKind(kind);
+  const storedPlate = normalizedVehiclePlate(vehicle.plate, kind);
+  const template = storedPlate && availableTemplates.some(item => item.id === storedPlate.template) ? vehiclePlateTemplateFor(storedPlate.template) : null;
+  const noPlate = vehicle.noPlate === true;
+  const options = availableTemplates.map(item => ({
     ...item,
     value: item.id,
     preview: vehiclePlatePreviewMarkup(item, {}, true)
   }));
-  return `<div class="field-group vehicle-plate-field${noPlate ? ' is-no-plate' : ''}" data-vehicle-plate-field>
+  const canChooseTemplate = Boolean(kind);
+  const placeholder = canChooseTemplate ? 'قالب پلاک را انتخاب کنید' : 'ابتدا وسیله نقلیه را انتخاب کنید';
+  return `<div class="field-group vehicle-plate-field${noPlate ? ' is-no-plate' : ''}" data-vehicle-plate-field data-vehicle-index="${index}">
     <label>پلاک</label>
-    <p class="vehicle-plate-description">قالب نزدیک به پلاک دیده‌شده را انتخاب کنید.</p>
-    ${searchableSelectMarkup('vehiclePlateTemplate', '', options, { value: template ? template.id : '', placeholder: 'انتخاب قالب پلاک', wrap: false, className: 'vehicle-plate-template-select', disabled: noPlate })}
+    <p class="vehicle-plate-description">اطلاعات پلاک مشاهده شده را وارد کنید</p>
+    ${searchableSelectMarkup(`vehiclePlateTemplate-${index}`, '', options, { value: template ? template.id : '', placeholder, wrap: false, className: 'vehicle-plate-template-select', disabled: noPlate || !canChooseTemplate })}
     <label class="vehicle-no-plate"><input type="checkbox" data-vehicle-no-plate onchange="toggleVehicleNoPlate(this)"${noPlate ? ' checked' : ''}><span>فاقد پلاک</span></label>
-    <div data-vehicle-plate-editor-container>${noPlate ? '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>برای این وسیله نقلیه، پلاکی مشاهده نشده است.</p></div>' : vehiclePlateEditorMarkup(template ? template.id : '', saved.parts || {})}</div>
+    <div data-vehicle-plate-editor-container>${noPlate ? '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>برای این وسیله نقلیه، پلاکی مشاهده نشده است.</p></div>' : vehiclePlateEditorMarkup(template ? template.id : '', storedPlate ? storedPlate.parts : {})}</div>
   </div>`;
 }
 
-function renderVehiclePlateEditor(field, templateId) {
-  const container = field && field.querySelector('[data-vehicle-plate-editor-container]');
-  if (!container) return;
-  container.innerHTML = vehiclePlateEditorMarkup(templateId);
+function vehicleCardMarkup(vehicle, index, total) {
+  const title = `وسیله نقلیه ${faDigits(index + 1)}`;
+  const removeButton = total > 1 ? `<button class="vehicle-remove-button" type="button" onclick="removeVehicle(this)">حذف این وسیله</button>` : '';
+  return `<article class="vehicle-card" data-vehicle-card data-vehicle-index="${index}">
+    <header class="vehicle-card-heading"><h3>${title}</h3>${removeButton}</header>
+    <div class="vehicle-card-fields">
+      ${searchableSelectMarkup(`vehicleKind-${index}`, 'وسیله نقلیه', VEHICLE_KIND_OPTIONS, { value: vehicle.kind || '', placeholder: 'خودرو یا موتورسیکلت را انتخاب کنید', className: 'vehicle-kind-select' })}
+      ${vehicleTextFieldMarkup(vehicle, 'type', 'نوع')}
+      ${vehicleTextFieldMarkup(vehicle, 'color', 'رنگ')}
+      ${vehiclePlateField(vehicle, index)}
+      ${vehicleTextFieldMarkup(vehicle, 'specialFeature', 'ویژگی خاص', { textarea: true, placeholder: 'تصادف، خوردگی رنگ و موارد بارز دیگر' })}
+    </div>
+  </article>`;
+}
+
+function vehicleCollectionInnerMarkup() {
+  const vehicles = ensurePersonVehicles();
+  const atLimit = vehicles.length >= MAX_VEHICLES;
+  return `<div class="vehicle-card-list">${vehicles.map((vehicle, index) => vehicleCardMarkup(vehicle, index, vehicles.length)).join('')}</div>
+    <button class="vehicle-add-button" type="button" onclick="addVehicle()"${atLimit ? ' disabled' : ''}>افزودن وسیله نقلیه دیگر${atLimit ? ` (حداکثر ${faDigits(MAX_VEHICLES)})` : ''}</button>`;
+}
+
+function vehicleCollectionMarkup() {
+  return `<div class="vehicle-collection" data-vehicle-collection aria-label="فهرست وسایل نقلیه">${vehicleCollectionInnerMarkup()}</div>`;
+}
+
+function renderVehiclePackages() {
+  const collection = document.querySelector('[data-vehicle-collection]');
+  if (!collection) return;
+  collection.innerHTML = vehicleCollectionInnerMarkup();
+  collection.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
+  collection.querySelectorAll('textarea[data-auto-resize="true"]').forEach(resizeTextarea);
+  setTimeout(normalizeVisibleNumbers, 0);
+}
+
+function vehicleCardIndexFor(element) {
+  const card = element && element.closest ? element.closest('[data-vehicle-card]') : null;
+  const index = card ? Number(card.dataset.vehicleIndex) : NaN;
+  return Number.isInteger(index) && index >= 0 ? index : -1;
+}
+
+function updateVehicleKind(component) {
+  const index = vehicleCardIndexFor(component);
+  if (index < 0) return;
+  collectForm();
+  const vehicles = ensurePersonVehicles();
+  const vehicle = vehicles[index];
+  if (!vehicle) return;
+  vehicle.kind = searchableSelectValue(component);
+  if (vehicle.plate && !vehiclePlateTemplatesForKind(vehicle.kind).some(item => item.id === vehicle.plate.template)) delete vehicle.plate;
+  renderVehiclePackages();
+}
+
+function updateVehiclePlateTemplate(component) {
+  const index = vehicleCardIndexFor(component);
+  if (index < 0) return;
+  const selectedTemplate = searchableSelectValue(component);
+  const previousTemplate = Array.isArray(state.form.vehicles) && isPlainRecord(state.form.vehicles[index]) && isPlainRecord(state.form.vehicles[index].plate)
+    ? state.form.vehicles[index].plate.template
+    : '';
+  collectForm();
+  const vehicles = ensurePersonVehicles();
+  const vehicle = vehicles[index];
+  const template = vehicle && vehiclePlateTemplateFor(selectedTemplate);
+  if (!vehicle || !template || !vehiclePlateTemplatesForKind(vehicle.kind).some(item => item.id === template.id)) return;
+  if (previousTemplate !== template.id) vehicle.plate = { template: template.id, label: template.label, parts: template.fixedLetter ? { letter: template.fixedLetter } : {} };
+  renderVehiclePackages();
 }
 
 function toggleVehicleNoPlate(checkbox) {
-  const field = checkbox.closest('[data-vehicle-plate-field]');
-  if (!field) return;
-  const component = field.querySelector('[data-searchable-select]');
-  field.classList.toggle('is-no-plate', checkbox.checked);
+  const index = vehicleCardIndexFor(checkbox);
+  if (index < 0) return;
+  collectForm();
+  const vehicle = ensurePersonVehicles()[index];
+  if (!vehicle) return;
   if (checkbox.checked) {
-    const input = component && component.querySelector('[data-searchable-select-value]');
-    if (input) input.value = '';
-    setSearchableSelectDisabled(component, true, 'فاقد پلاک');
-    const container = field.querySelector('[data-vehicle-plate-editor-container]');
-    if (container) container.innerHTML = '<div class="vehicle-plate-editor vehicle-plate-editor--empty" data-vehicle-plate-editor><p>برای این وسیله نقلیه، پلاکی مشاهده نشده است.</p></div>';
+    vehicle.noPlate = true;
+    delete vehicle.plate;
   } else {
-    setSearchableSelectDisabled(component, false, 'انتخاب قالب پلاک');
+    delete vehicle.noPlate;
   }
+  renderVehiclePackages();
+  persistReportDraft();
+}
+
+function addVehicle() {
+  collectForm();
+  const vehicles = ensurePersonVehicles();
+  if (vehicles.length >= MAX_VEHICLES) return;
+  vehicles.push({});
+  renderVehiclePackages();
+  persistReportDraft();
+}
+
+function removeVehicle(button) {
+  const index = vehicleCardIndexFor(button);
+  if (index < 0) return;
+  collectForm();
+  const vehicles = ensurePersonVehicles();
+  vehicles.splice(index, 1);
+  if (!vehicles.length) vehicles.push({});
+  renderVehiclePackages();
   persistReportDraft();
 }
 
@@ -813,34 +1019,42 @@ function syncVehiclePlatePreview(input) {
   preview.textContent = input.value || fallback;
 }
 
-function collectVehiclePlate(data) {
-  const field = document.querySelector('[data-vehicle-plate-field]');
-  // Only the active sequential form section is in the DOM. Keep a saved vehicle
-  // record while the reporter is on an earlier section, time, or location page.
-  if (!field) return;
+function collectVehiclePackages(data) {
+  const collection = document.querySelector('[data-vehicle-collection]');
+  // Only the active sequential form section is in the DOM. Keep package records
+  // intact while the reporter is on earlier steps, time, location, or documents.
+  if (!collection) return;
 
-  const noPlate = field.querySelector('[data-vehicle-no-plate]');
-  if (noPlate && noPlate.checked) {
-    data.vehicleNoPlate = 'بله';
-    delete data.vehiclePlate;
-    return;
-  }
-
-  delete data.vehicleNoPlate;
-  const component = field.querySelector('[data-searchable-select]');
-  const template = vehiclePlateTemplateFor(searchableSelectValue(component));
-  if (!template) {
-    delete data.vehiclePlate;
-    return;
-  }
-
-  const parts = {};
-  field.querySelectorAll('[data-vehicle-plate-input]').forEach(input => {
-    const value = input.value.trim();
-    if (value) parts[input.dataset.platePart] = value;
+  const vehicles = [];
+  collection.querySelectorAll('[data-vehicle-card]').forEach(card => {
+    const kindPicker = card.querySelector('[data-select-name^="vehicleKind-"]');
+    const platePicker = card.querySelector('[data-select-name^="vehiclePlateTemplate-"]');
+    const kind = searchableSelectValue(kindPicker);
+    const record = {
+      kind,
+      type: (card.querySelector('[data-vehicle-field="type"]')?.value || '').trim(),
+      color: (card.querySelector('[data-vehicle-field="color"]')?.value || '').trim(),
+      specialFeature: (card.querySelector('[data-vehicle-field="specialFeature"]')?.value || '').trim()
+    };
+    const noPlate = card.querySelector('[data-vehicle-no-plate]');
+    if (noPlate && noPlate.checked) {
+      record.noPlate = true;
+    } else {
+      const template = vehiclePlateTemplateFor(searchableSelectValue(platePicker));
+      if (template && vehiclePlateTemplatesForKind(kind).some(item => item.id === template.id)) {
+        const parts = {};
+        card.querySelectorAll('[data-vehicle-plate-input]').forEach(input => {
+          const value = input.value.trim();
+          if (value) parts[input.dataset.platePart] = value;
+        });
+        if (template.fixedLetter) parts.letter = template.fixedLetter;
+        record.plate = { template: template.id, label: template.label, parts };
+      }
+    }
+    vehicles.push(normalizedVehicleRecord(record));
   });
-  if (template.fixedLetter) parts.letter = template.fixedLetter;
-  data.vehiclePlate = { template: template.id, label: template.label, parts };
+  data.vehicles = vehicles.slice(0, MAX_VEHICLES);
+  clearLegacyPersonVehicleFields(data);
 }
 
 function socialPlatformFor(platformId) {
@@ -1047,6 +1261,7 @@ function hasMeaningfulFormValue() {
       return value.some(link => isPlainRecord(link) && typeof link.value === 'string' && link.value.trim());
     }
     if (name === 'vehiclePlate' && isPlainRecord(value)) return Boolean(value.template);
+    if (name === 'vehicles' && Array.isArray(value)) return value.some(vehicleRecordHasMeaningfulValue);
     return typeof value === 'string' && value.trim();
   });
 }
@@ -1162,8 +1377,8 @@ function personForm() {
       `${field('phoneMobile','شماره همراه','text',{numeric:true,maxLength:11,validation:'phone'})}${field('phoneFixed','شماره ثابت محل سکونت','text',{numeric:true,maxLength:11,validation:'phone'})}${field('homeAddress','نشانی محل سکونت','textarea')}${field('phoneWork','شماره ثابت محل کار','text',{numeric:true,maxLength:11,validation:'phone'})}${field('workAddress','نشانی محل کار','textarea')}${field('email','نشانی پست الکترونیک','email',{validation:'email',placeholder:'example@gmail.com',ltr:true})}${socialLinksField()}`,
       'شماره‌های تماس و نشانی‌های مرتبط را وارد کنید.'),
     formSection('وسایل نقلیه',
-      `${searchableSelectMarkup('vehicleKind','نوع وسیله نقلیه',VEHICLE_KIND_OPTIONS,{fieldName:'vehicleKind',value:typeof state.form.vehicleKind === 'string' ? state.form.vehicleKind : '',placeholder:'خودرو یا موتورسیکلت را انتخاب کنید'})}${field('vehicleType','نوع')}${field('vehicleColor','رنگ')}${vehiclePlateField()}${field('vehicleSpecialFeature','ویژگی خاص','textarea',{placeholder:'تصادف، خوردگی رنگ و موارد بارز دیگر'})}`,
-      'نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده وسیله نقلیه را ثبت کنید.')
+      vehicleCollectionMarkup(),
+      'برای هر وسیله نقلیه، نوع، رنگ، پلاک و ویژگی‌های قابل مشاهده را ثبت کنید.')
   ];
 }
 
@@ -1320,7 +1535,7 @@ function collectForm() {
     else delete data[row.dataset.choice];
   });
   collectSocialLinks(data);
-  collectVehiclePlate(data);
+  collectVehiclePackages(data);
   state.form = data;
 }
 
@@ -1451,17 +1666,17 @@ function renderLocationFields() {
   const province = unknown ? state.location.province || '' : '';
   const city = unknown ? state.location.city || '' : '';
   const counties = locationCountyItems(province);
-  const addressLabel = unknown ? 'آدرس' : 'جزئیات مکان وقوع';
+  if (unknown) delete state.location.address;
   const regionFields = unknown ? `<div class="location-region-fields">
     ${searchableSelectMarkup('locationProvince', 'استان مکان وقوع', locationProvinceItems(), { inputId: 'province', value: province, placeholder: 'استان را انتخاب کنید' })}
     ${searchableSelectMarkup('locationCounty', 'شهرستان مکان وقوع', counties, { inputId: 'city', value: city, placeholder: province ? 'شهرستان را انتخاب کنید' : 'ابتدا استان را انتخاب کنید', disabled: !province })}
   </div>` : '';
-
-  box.innerHTML = `${regionFields}
-    <div class="field-group location-address-field">
-      <label for="address">${addressLabel}</label>
+  const detailsField = unknown ? '' : `<div class="field-group location-address-field">
+      <label for="address">جزئیات مکان وقوع</label>
       <textarea id="address" class="field-textarea" data-auto-resize="true" placeholder="شامل کدپستی، پلاک، طبقه و واحد و ...">${escapeHtml(state.location.address || '')}</textarea>
     </div>`;
+
+  box.innerHTML = `${regionFields}${detailsField}`;
   box.querySelectorAll('[data-searchable-select]').forEach(updateSearchableSelectPresentation);
   const address = document.getElementById('address');
   if (address) resizeTextarea(address);
@@ -1676,6 +1891,8 @@ function isImageDocument(document) {
   return Boolean(document) && typeof document.mime === 'string' && document.mime.startsWith('image/');
 }
 
+let documentSequence = 0;
+
 function documentTypeLabel(document) {
   if (isImageDocument(document)) return 'تصویر';
   const extension = typeof document.name === 'string' && document.name.includes('.')
@@ -1684,61 +1901,206 @@ function documentTypeLabel(document) {
   return extension || 'فایل';
 }
 
+function formatDocumentSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size < 0) return '';
+  if (size < 1024 * 1024) return `${faDigits(Math.max(1, Math.round(size / 1024)))} کیلوبایت`;
+  const megabytes = Math.round((size / (1024 * 1024)) * 10) / 10;
+  return `${faDigits(megabytes)} مگابایت`;
+}
+
+function documentIsReading(document) {
+  return Boolean(document) && document.status === 'reading';
+}
+
+function documentStatusText(document) {
+  if (documentIsReading(document)) return `در حال آماده‌سازی ${faDigits(Math.round(Number(document.progress) || 0))}٪`;
+  if (document && document.status === 'error') return document.error || 'خواندن فایل انجام نشد';
+  const type = documentTypeLabel(document);
+  const size = formatDocumentSize(document && document.size);
+  return size ? `${type} · ${size}` : type;
+}
+
+function updateDocumentUploadCard() {
+  const card = document.querySelector('.document-upload-card');
+  const input = document.getElementById('documentInput');
+  const atLimit = state.documents.length >= MAX_DOCUMENTS;
+  const isReading = state.documents.some(documentIsReading);
+  if (card) {
+    card.classList.toggle('is-full', atLimit);
+    card.classList.toggle('is-reading', isReading);
+    card.setAttribute('aria-busy', String(isReading));
+  }
+  if (input) input.disabled = atLimit;
+}
+
 function addDocuments(input) {
+  setDocumentTransferStatus();
   const selectedFiles = Array.from(input.files || []);
   const slots = Math.max(0, MAX_DOCUMENTS - state.documents.length);
-  const candidates = selectedFiles.slice(0, slots);
-  const accepted = candidates.filter(file => Number.isFinite(file.size) && file.size <= MAX_DOCUMENT_BYTES);
-  const oversized = candidates.length - accepted.length;
-  const overCount = Math.max(0, selectedFiles.length - slots);
+  const withinSizeLimit = selectedFiles.filter(file => Number.isFinite(file.size) && file.size <= MAX_DOCUMENT_BYTES);
+  const accepted = withinSizeLimit.slice(0, slots);
+  const oversized = selectedFiles.length - withinSizeLimit.length;
+  const overCount = Math.max(0, withinSizeLimit.length - slots);
 
   if (oversized || overCount) {
     const notices = [];
-    if (oversized) notices.push(`هر فایل باید حداکثر ${faDigits(5)} مگابایت باشد.`);
+    if (oversized) notices.push(`هر فایل باید حداکثر ${faDigits(100)} مگابایت باشد.`);
     if (overCount) notices.push(`حداکثر ${faDigits(MAX_DOCUMENTS)} فایل قابل بارگذاری است.`);
     alert(notices.join(' '));
   }
+  if (typeof FileReader === 'undefined') {
+    if (accepted.length) alert('خواندن فایل در این مرورگر در دسترس نیست.');
+    input.value = '';
+    return;
+  }
 
   accepted.forEach(file => {
+    const entry = {
+      id: `document-${++documentSequence}`,
+      type: String(file.type || '').startsWith('image/') ? 'image' : 'file',
+      name: file.name || 'فایل بدون نام',
+      mime: file.type || 'application/octet-stream',
+      size: file.size,
+      status: 'reading',
+      progress: 0,
+      data: ''
+    };
+    state.documents.push(entry);
     const reader = new FileReader();
-    reader.onload = () => {
-      state.documents.push({
-        type: String(file.type || '').startsWith('image/') ? 'image' : 'file',
-        name: file.name || 'فایل بدون نام',
-        mime: file.type || 'application/octet-stream',
-        size: file.size,
-        data: reader.result
-      });
+    reader.onprogress = event => {
+      if (!state.documents.includes(entry)) return;
+      if (event.lengthComputable && event.total > 0) entry.progress = Math.min(100, (event.loaded / event.total) * 100);
       renderDocuments();
     };
-    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (!state.documents.includes(entry)) return;
+      if (typeof reader.result !== 'string') {
+        entry.status = 'error';
+        entry.error = 'خواندن فایل انجام نشد';
+      } else {
+        entry.data = reader.result;
+        entry.status = 'ready';
+        entry.progress = 100;
+      }
+      renderDocuments();
+    };
+    reader.onerror = reader.onabort = () => {
+      if (!state.documents.includes(entry)) return;
+      entry.status = 'error';
+      entry.error = 'خواندن فایل انجام نشد';
+      renderDocuments();
+    };
+    try {
+      reader.readAsDataURL(file);
+    } catch (error) {
+      entry.status = 'error';
+      entry.error = 'خواندن فایل انجام نشد';
+      renderDocuments();
+    }
   });
   input.value = '';
+  renderDocuments();
+}
+
+function documentProgressMarkup(document) {
+  if (!documentIsReading(document)) return '';
+  const progress = Math.max(0, Math.min(100, Math.round(Number(document.progress) || 0)));
+  return `<span class="document-item-progress"><span>در حال آماده‌سازی</span><progress max="100" value="${progress}">${faDigits(progress)}٪</progress><b>${faDigits(progress)}٪</b></span>`;
 }
 
 function renderDocuments() {
   const box = document.getElementById('documentList');
   if (!box) return;
+  updateDocumentUploadCard();
+  if (!state.documents.length) {
+    box.innerHTML = '<div class="document-empty-state"><strong>امکان انتخاب چند فایل وجود دارد</strong><span>تصویر، PDF و سایر مستندات را می‌توانید با هم بارگذاری کنید.</span></div>';
+    return;
+  }
   box.innerHTML = state.documents.map((document, index) => {
-    const imagePreview = isImageDocument(document)
+    const imagePreview = isImageDocument(document) && typeof document.data === 'string' && document.data
       ? `<img src="${escapeHtml(document.data)}" alt="">`
       : `<span class="document-file-preview" aria-hidden="true">${iconMarkup('report', 'document-file-icon')}</span>`;
-    return `<div class="document-item">
+    const errorClass = document.status === 'error' ? ' is-error' : '';
+    return `<div class="document-item${errorClass}">
       ${imagePreview}
-      <span class="document-item-copy"><strong>${escapeHtml(document.name)}</strong><small>${documentTypeLabel(document)}</small></span>
+      <span class="document-item-copy"><strong>${escapeHtml(document.name)}</strong><small>${escapeHtml(documentStatusText(document))}</small>${documentProgressMarkup(document)}</span>
       <button class="document-delete-button" type="button" aria-label="حذف فایل ${faDigits(index + 1)}" onclick="removeDocument(${index})">${iconMarkup('trash', 'button-icon delete-icon')}<span>حذف</span></button>
     </div>`;
   }).join('');
 }
 
-
 function removeDocument(index) {
   state.documents.splice(index, 1);
+  setDocumentTransferStatus();
   renderDocuments();
+}
+
+function setDocumentTransferStatus(message = '', progress = null, isError = false) {
+  const status = document.getElementById('documentTransferStatus');
+  if (!status) return;
+  if (!message) {
+    status.hidden = true;
+    status.classList.remove('is-error');
+    status.textContent = '';
+    return;
+  }
+  status.hidden = false;
+  status.classList.toggle('is-error', isError);
+  const validProgress = Number.isFinite(progress);
+  const normalizedProgress = validProgress ? Math.max(0, Math.min(100, Math.round(progress))) : 0;
+  status.innerHTML = `<span>${escapeHtml(message)}${validProgress ? ` ${faDigits(normalizedProgress)}٪` : ''}</span><span class="document-transfer-track${validProgress ? '' : ' is-indeterminate'}" aria-hidden="true"><i style="--document-transfer-progress:${normalizedProgress}%"></i></span>`;
+}
+
+function submitReportPayload(payload, onProgress) {
+  if (typeof XMLHttpRequest === 'undefined') {
+    return fetch('app/report-handler.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(async response => {
+      let output = {};
+      try { output = await response.json(); } catch (error) { /* handled below */ }
+      if (!response.ok || !output.ok) throw new Error(output.message || 'ثبت گزارش انجام نشد.');
+      return output;
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('POST', 'app/report-handler.php', true);
+    request.setRequestHeader('Content-Type', 'application/json');
+    if (request.upload) {
+      request.upload.onprogress = event => {
+        if (event.lengthComputable && event.total > 0) onProgress((event.loaded / event.total) * 100);
+        else onProgress(null);
+      };
+    }
+    request.onload = () => {
+      let output = {};
+      try { output = JSON.parse(request.responseText || '{}'); } catch (error) { /* handled below */ }
+      if (request.status >= 200 && request.status < 300 && output.ok) resolve(output);
+      else reject(new Error(output.message || 'ثبت گزارش انجام نشد.'));
+    };
+    request.onerror = () => reject(new Error('ارتباط با سرور برقرار نشد.'));
+    request.onabort = () => reject(new Error('ارسال گزارش متوقف شد.'));
+    request.send(JSON.stringify(payload));
+  });
 }
 
 async function sendReport() {
   collectForm();
+  const pendingDocument = state.documents.find(document => documentIsReading(document));
+  if (pendingDocument) {
+    setDocumentTransferStatus('بارگذاری فایل‌ها هنوز کامل نشده است؛ لطفاً صبر کنید.');
+    return;
+  }
+  const failedDocument = state.documents.find(document => document.status === 'error' || !document.data);
+  if (failedDocument) {
+    setDocumentTransferStatus('یک فایل آماده نشده است؛ آن را حذف و دوباره انتخاب کنید.', null, true);
+    return;
+  }
+
   const payload = {
     reportType: 'گزارش',
     category: state.category,
@@ -1746,32 +2108,39 @@ async function sendReport() {
     form: state.form,
     location: state.location,
     time: state.time,
-    documents: state.documents
+    documents: state.documents.map(document => ({
+      type: document.type,
+      name: document.name,
+      mime: document.mime,
+      size: document.size,
+      data: document.data
+    }))
   };
 
   const button = document.querySelector('#documentsPage .primary-button');
   const success = document.getElementById('successBox');
+  if (!button) return;
   button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
   success.textContent = '';
+  setDocumentTransferStatus(state.documents.length ? 'در حال ارسال گزارش و مستندات' : 'در حال ارسال گزارش', 0);
 
   try {
-    const response = await fetch('app/report-handler.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    await submitReportPayload(payload, progress => {
+      setDocumentTransferStatus(state.documents.length ? 'در حال ارسال گزارش و مستندات' : 'در حال ارسال گزارش', progress);
     });
-    const output = await response.json();
-    if (!response.ok || !output.ok) throw new Error(output.message || 'ثبت گزارش انجام نشد.');
     hasSubmittedReport = true;
     clearReportDraft();
+    setDocumentTransferStatus('ارسال گزارش با موفقیت کامل شد.', 100);
     success.textContent = 'گزارش با موفقیت ثبت شد.';
   } catch (error) {
-    success.textContent = error.message || 'ثبت گزارش انجام نشد.';
+    setDocumentTransferStatus(error.message || 'ثبت گزارش انجام نشد.', null, true);
+    success.textContent = '';
   } finally {
     button.disabled = false;
+    button.removeAttribute('aria-busy');
   }
 }
-
 if (!restoreReportDraft()) {
   renderReportRoadmaps();
   normalizeVisibleNumbers();

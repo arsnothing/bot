@@ -102,11 +102,24 @@ function normalizeSocialLinks(array &$form): void {
   else unset($form['socialLinks']);
 }
 
+function vehiclesHaveMeaningfulValue(array $vehicles): bool {
+  foreach ($vehicles as $vehicle) {
+    if (!is_array($vehicle)) continue;
+    foreach (['kind', 'type', 'color', 'specialFeature'] as $key) {
+      if (isset($vehicle[$key]) && is_scalar($vehicle[$key]) && trim((string)$vehicle[$key]) !== '') return true;
+    }
+    if (!empty($vehicle['noPlate'])) return true;
+    if (isset($vehicle['plate']) && is_array($vehicle['plate']) && !empty($vehicle['plate']['template'])) return true;
+  }
+  return false;
+}
+
 function formHasMeaningfulValue(array $form): bool {
   foreach ($form as $key => $value) {
     if (is_scalar($value) && trim((string)$value) !== '') return true;
     if ($key === 'socialLinks' && is_array($value) && count($value) > 0) return true;
     if ($key === 'vehiclePlate' && is_array($value) && !empty($value['template'])) return true;
+    if ($key === 'vehicles' && is_array($value) && vehiclesHaveMeaningfulValue($value)) return true;
   }
   return false;
 }
@@ -212,8 +225,8 @@ function normalize(array $input): array {
         throw new InvalidArgumentException('محتوای فایل بارگذاری‌شده نامعتبر است.');
       }
       $contents = base64_decode($matches[2], true);
-      if ($contents === false || strlen($contents) > 5 * 1024 * 1024) {
-        throw new InvalidArgumentException('حجم هر فایل نباید بیشتر از ۵ مگابایت باشد.');
+      if ($contents === false || strlen($contents) > 100 * 1024 * 1024) {
+        throw new InvalidArgumentException('حجم هر فایل نباید بیشتر از ۱۰۰ مگابایت باشد.');
       }
       $mime = strtolower($matches[1]);
       $documents[] = [
