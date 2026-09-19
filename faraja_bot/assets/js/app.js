@@ -17,6 +17,7 @@ const forms = {};
 const CATEGORY_ALIASES = Object.freeze({
   'فرد': 'افراد',
   'ملک': 'املاک',
+  'اماکن': 'املاک',
   'شیء': 'اشیاء',
   'پدیده اجتماعی': 'رویداد'
 });
@@ -60,7 +61,7 @@ const RESTORABLE_PAGE_IDS = new Set([
   'incidentReportPage',
   'documentsPage'
 ]);
-const RETIRED_INCIDENT_FIELD_KEYS = Object.freeze(['crimeMethod', 'crimePlace', 'crimeDate']);
+const RETIRED_INCIDENT_FIELD_KEYS = Object.freeze(['crimeType', 'crimeMethod', 'crimePlace', 'crimeDate']);
 const RETIRED_PROPERTY_FIELD_KEYS = Object.freeze(['propertyAddress', 'owners', 'activity']);
 
 function clearRetiredIncidentFields(form = state.form) {
@@ -651,29 +652,41 @@ function chooseSubtype(subtype) {
   }
 }
 
+function requiredLabelMarkup(label, required, optional) {
+  const status = required
+    ? '<span class="field-required" aria-label="اجباری">اجباری</span>'
+    : optional ? '<span class="field-optional">اختیاری</span>' : '';
+  return `${label}${status}`;
+}
+
 function field(name, label, type = 'text', options = {}) {
   const numeric = options.numeric ? 'numeric' : '';
   const textOnly = options.textOnly ? 'text-only' : '';
+  const isRequired = Boolean(options.required || name === 'source');
   const maxLength = options.maxLength ? ` maxlength="${options.maxLength}"` : '';
   const maxValue = Number.isFinite(options.maxValue) ? ` data-max-value="${options.maxValue}"` : '';
   const placeholder = options.placeholder ? ` placeholder="${options.placeholder}"` : '';
   const validation = options.validation ? ` data-validation="${options.validation}"` : '';
+  const required = isRequired ? ' data-required="true"' : '';
   const numericRule = options.numeric ? ' data-numeric="true"' : '';
   const textRule = options.textOnly ? ' data-text-only="true"' : '';
   const direction = options.ltr ? ' dir="ltr"' : '';
   const preserveLatin = options.preserveLatin ? ' data-preserve-latin="true"' : '';
   const inputMode = options.numeric ? 'numeric' : type === 'email' ? 'email' : 'text';
-  const attributes = `data-field="${name}" data-label="${label}"${numericRule}${textRule}${validation}${maxLength}${maxValue}${placeholder}${direction}${preserveLatin}`;
+  const attributes = `data-field="${name}" data-label="${label}"${required}${numericRule}${textRule}${validation}${maxLength}${maxValue}${placeholder}${direction}${preserveLatin}`;
+  const renderedLabel = requiredLabelMarkup(label, isRequired, Boolean(options.optional));
 
   if (type === 'textarea') {
-    return `<div class="field-group"><label>${label}</label><textarea class="field-textarea ${numeric} ${textOnly}" ${attributes} data-auto-resize="true"></textarea></div>`;
+    return `<div class="field-group"><label>${renderedLabel}</label><textarea class="field-textarea ${numeric} ${textOnly}" ${attributes} data-auto-resize="true"></textarea></div>`;
   }
-  return `<div class="field-group"><label>${label}</label><input class="field-input ${numeric} ${textOnly}" ${attributes} type="${type}" inputmode="${inputMode}"></div>`;
+  return `<div class="field-group"><label>${renderedLabel}</label><input class="field-input ${numeric} ${textOnly}" ${attributes} type="${type}" inputmode="${inputMode}"></div>`;
 }
 
 function choices(name, label, items, options = {}) {
   const columns = options.columns === 3 ? ' choice-row--three' : '';
-  return `<div class="field-group"><label>${label}</label><div class="choice-row${columns}" data-choice="${name}">${items.map(item => `<button type="button" class="choice-btn" onclick="pickChoice(this,'${name}','${item.replace(/'/g, "\\'")}')">${item}</button>`).join('')}</div></div>`;
+  const required = options.required ? ' data-required="true"' : '';
+  const renderedLabel = requiredLabelMarkup(label, Boolean(options.required), Boolean(options.optional));
+  return `<div class="field-group"><label>${renderedLabel}</label><div class="choice-row${columns}" data-choice="${name}" data-label="${label}"${required}>${items.map(item => `<button type="button" class="choice-btn" onclick="pickChoice(this,'${name}','${item.replace(/'/g, "\\'")}')">${item}</button>`).join('')}</div></div>`;
 }
 
 function yesNo(name, label) {
@@ -781,11 +794,12 @@ function searchableSelectMarkup(name, label, items, options = {}) {
   const fieldName = options.fieldName ? ` data-field="${escapeHtml(options.fieldName)}" data-label="${escapeHtml(label)}"` : '';
   const isDisabled = Boolean(options.disabled);
   const disabled = isDisabled ? ' disabled' : '';
+  const required = options.required ? ` data-required="true" data-label="${escapeHtml(label)}"` : '';
   const menuId = `searchable-select-menu-${name}`;
   const rootClass = `${options.wrap === false ? '' : 'field-group '}searchable-select-field${options.className ? ` ${options.className}` : ''}`;
-  const labelMarkup = label ? `<label>${escapeHtml(label)}</label>` : '';
+  const labelMarkup = label ? `<label>${escapeHtml(label)}${options.required ? '<span class="field-required" aria-label="اجباری">اجباری</span>' : ''}</label>` : '';
 
-  return `<div class="${rootClass}" data-searchable-select data-select-name="${escapeHtml(name)}" data-placeholder="${escapeHtml(options.placeholder || 'انتخاب کنید')}">
+  return `<div class="${rootClass}" data-searchable-select data-select-name="${escapeHtml(name)}" data-placeholder="${escapeHtml(options.placeholder || 'انتخاب کنید')}"${required}>
     ${labelMarkup}
     <input type="hidden"${inputId} data-searchable-select-value${fieldName} value="${escapeHtml(value)}">
     <button type="button" class="searchable-select-trigger button-with-icon" aria-haspopup="listbox" aria-controls="${menuId}" aria-expanded="false" onclick="toggleSearchableSelect(this)"${disabled}><span class="searchable-select-trigger-copy" data-searchable-select-label>${escapeHtml(selectedLabel)}</span>${iconMarkup('chevron-down', 'searchable-select-chevron')}</button>
@@ -890,6 +904,10 @@ function selectSearchableSelectOption(option) {
 
 function handleSearchableSelectChange(component) {
   const name = component.dataset.selectName;
+  if (name === 'incidentScenario') {
+    updateIncidentScenario(component);
+    return;
+  }
   if (name === 'locationProvince') {
     const province = searchableSelectValue(component);
     state.location.province = province;
@@ -1661,11 +1679,24 @@ function isValidNationalId(value) {
 }
 
 function fieldValidationMessage(element) {
-  const value = element.value.trim();
+  const label = element.dataset.label || 'این فیلد';
+  if (element.dataset.required === 'true') {
+    if (element.dataset.choice && !element.querySelector('.choice-btn.selected')) {
+      return `${label} را انتخاب کنید.`;
+    }
+    if (element.matches('[data-searchable-select]') && !searchableSelectValue(element)) {
+      return `${label} را انتخاب کنید.`;
+    }
+    if (!element.dataset.choice && !element.matches('[data-searchable-select]')) {
+      const requiredValue = typeof element.value === 'string' ? element.value.trim() : '';
+      if (!requiredValue) return `${label} را وارد کنید.`;
+    }
+  }
+
+  const value = typeof element.value === 'string' ? element.value.trim() : '';
   if (!value || !element.dataset.validation) return '';
 
   const digits = enDigits(value);
-  const label = element.dataset.label || 'این فیلد';
   if (element.dataset.validation === 'national-id' && !isValidNationalId(digits)) {
     return `${label} باید ۱۰ رقم معتبر باشد.`;
   }
@@ -1687,19 +1718,29 @@ function fieldValidationMessage(element) {
   return '';
 }
 
+function focusInvalidField(element) {
+  if (!element) return;
+  const focusTarget = element.matches && element.matches('[data-choice]')
+    ? element.querySelector('.choice-btn')
+    : element.matches && element.matches('[data-searchable-select]')
+      ? element.querySelector('.searchable-select-trigger')
+      : element;
+  if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
+}
+
 function validateVisibleFormFields(scope = null) {
   const activeScope = scope && typeof scope.querySelectorAll === 'function'
     ? scope
     : document.querySelector('.page.active');
   const validationFields = activeScope
-    ? Array.from(activeScope.querySelectorAll('[data-validation]'))
-    : Array.from(document.querySelectorAll('[data-validation]'));
+    ? Array.from(activeScope.querySelectorAll('[data-validation], [data-required]'))
+    : Array.from(document.querySelectorAll('[data-validation], [data-required]'));
   const invalid = validationFields
     .map(element => ({ element, message: fieldValidationMessage(element) }))
     .find(item => item.message);
 
   if (!invalid) return true;
-  if (typeof invalid.element.focus === 'function') invalid.element.focus();
+  focusInvalidField(invalid.element);
   alert(invalid.message);
   return false;
 }
@@ -1781,14 +1822,364 @@ function personForm() {
   ];
 }
 
+function incidentScenarioText(key, label, type = 'textarea') {
+  return Object.freeze({ kind: 'field', key, label, type, options: Object.freeze({ required: true }) });
+}
+
+function incidentScenarioChoices(key, label, items, options = {}) {
+  return Object.freeze({
+    kind: 'choices',
+    key,
+    label,
+    items: Object.freeze([...items]),
+    options: Object.freeze({ required: true, ...options })
+  });
+}
+
+function incidentScenario(title, fields, search = '') {
+  return Object.freeze({
+    title,
+    search: `${title} ${search}`.trim(),
+    fields: Object.freeze([...fields])
+  });
+}
+
+const DRUG_SCENARIO_FIELDS = Object.freeze([
+  incidentScenarioText('drugType', 'نوع مواد'),
+  incidentScenarioText('drugQuantity', 'مقدار مواد'),
+  incidentScenarioChoices('drugCultivatorProducer', 'آیا فرد مرتبط، کاشت یا تولید کننده است؟', ['بله', 'خیر', 'نامشخص'], { columns: 3 }),
+  incidentScenarioChoices('drugStudentInvolvement', 'دانش‌آموزان درگیر هستند؟', ['بله', 'خیر', 'نامشخص'], { columns: 3 }),
+  incidentScenarioText('drugTransit', 'مسیر، محل نگهداری یا جابه‌جایی')
+]);
+
+const INCIDENT_SCENARIOS = Object.freeze([
+  incidentScenario('جرائم زیست محیطی', [
+    incidentScenarioText('environmentSubject', 'موضوع یا گونه در معرض آسیب'),
+    incidentScenarioText('environmentAction', 'آسیب یا اقدام مشاهده‌شده'),
+    incidentScenarioText('environmentLocation', 'محدوده یا محل وقوع')
+  ]),
+  incidentScenario('تعدی مامورین دولتی', [
+    incidentScenarioText('officialAbuseActor', 'مشخصات مأمور یا دستگاه مربوط'),
+    incidentScenarioText('officialAbuseAction', 'رفتار یا اقدام خارج از وظیفه'),
+    incidentScenarioText('officialAbuseImpact', 'اثر یا زیان ایجادشده')
+  ]),
+  incidentScenario('جرائم سایبری', [
+    incidentScenarioText('cyberService', 'سامانه، حساب یا بستر درگیر'),
+    incidentScenarioText('cyberConduct', 'رفتار یا اقدام مشاهده‌شده'),
+    incidentScenarioText('cyberImpact', 'آسیب یا هدف احتمالی')
+  ]),
+  incidentScenario('جرائم عمومی علیه اموال و اشخاص', [
+    incidentScenarioText('generalOffenceTarget', 'فرد یا مال درگیر'),
+    incidentScenarioText('generalOffenceAction', 'اقدام مشاهده‌شده'),
+    incidentScenarioText('generalOffenceImpact', 'خسارت یا آسیب واردشده')
+  ]),
+  incidentScenario('تیراندازی', [
+    incidentScenarioText('shootingLocation', 'محل تیراندازی'),
+    incidentScenarioText('shootingDirection', 'جهت و وضعیت تیراندازی'),
+    incidentScenarioText('shootingWeaponSigns', 'نوع سلاح یا نشانه‌های آن')
+  ]),
+  incidentScenario('بهره برداری غیرمجاز', [
+    incidentScenarioText('unauthorizedResource', 'منبع یا موضوع بهره‌برداری'),
+    incidentScenarioText('unauthorizedMethod', 'نحوه بهره‌برداری غیرمجاز'),
+    incidentScenarioText('unauthorizedLocation', 'محل یا محدوده')
+  ]),
+  incidentScenario('ادم ربایی', [
+    incidentScenarioText('abductionPerson', 'مشخصات فرد در معرض آدم‌ربایی'),
+    incidentScenarioText('abductionLastSeen', 'آخرین محل و زمان مشاهده'),
+    incidentScenarioText('abductionRelatedPeople', 'مشخصات یا نشانه‌های افراد مرتبط')
+  ], 'آدم ربایی'),
+  incidentScenario('پیدایش اجساد ناشناس', [
+    incidentScenarioText('unknownBodyLocation', 'محل پیدایش'),
+    incidentScenarioText('unknownBodyCondition', 'وضعیت ظاهری و شرایط محل'),
+    incidentScenarioText('unknownBodyIdentitySigns', 'نشانه‌های هویتی یا پوشش')
+  ]),
+  incidentScenario('حوادث و سوانح غیر عمدی', [
+    incidentScenarioText('accidentType', 'نوع حادثه یا سانحه'),
+    incidentScenarioText('accidentCause', 'علت احتمالی و روند وقوع'),
+    incidentScenarioText('accidentDamage', 'خسارت یا آسیب واردشده')
+  ]),
+  incidentScenario('امور امنیتی مجاز', [
+    incidentScenarioText('authorizedSecurityMatter', 'موضوع امنیتی مشاهده‌شده'),
+    incidentScenarioText('authorizedSecurityLocation', 'محل یا حوزه مربوط'),
+    incidentScenarioText('authorizedSecurityDetails', 'جزئیات مشاهده و دلیل اهمیت')
+  ]),
+  incidentScenario('امور خاص اتباع بیگانه_ دیپلمات', [
+    incidentScenarioText('foreignDiplomatPerson', 'مشخصات تبعه یا شخص دیپلماتیک'),
+    incidentScenarioText('foreignDiplomatConnection', 'ارتباط با موضوع'),
+    incidentScenarioText('foreignDiplomatPlace', 'محل یا مجموعه مرتبط')
+  ], 'دیپلمات اتباع'),
+  incidentScenario('مشاهدات وقایع مرزی', [
+    incidentScenarioText('borderEventLocation', 'نقطه یا محدوده مرزی'),
+    incidentScenarioText('borderEventDirection', 'جهت حرکت یا مسیر مشاهده‌شده'),
+    incidentScenarioText('borderEventPeople', 'افراد، وسیله یا نشانه‌های مرتبط')
+  ]),
+  incidentScenario('امور مالی و ملکی', [
+    incidentScenarioText('financialPropertySubject', 'موضوع مالی یا ملکی'),
+    incidentScenarioText('financialPropertyTransaction', 'معامله یا اقدام مشاهده‌شده'),
+    incidentScenarioText('financialPropertyImpact', 'زیان یا اختلاف ایجادشده')
+  ]),
+  incidentScenario('درگیری مسلحانه', [
+    incidentScenarioText('armedConflictLocation', 'محل درگیری'),
+    incidentScenarioText('armedConflictParties', 'افراد یا گروه‌های درگیر'),
+    incidentScenarioText('armedConflictWeaponSigns', 'سلاح یا نشانه‌های مشاهده‌شده')
+  ]),
+  incidentScenario('وقایع و فراخوان سایبری', [
+    incidentScenarioText('cyberCallPlatform', 'بستر یا کانال فراخوان'),
+    incidentScenarioText('cyberCallContent', 'محتوا یا پیام فراخوان'),
+    incidentScenarioText('cyberCallAudience', 'مخاطبان یا گروه هدف')
+  ]),
+  incidentScenario('حوادث مرتبط با با مواد محترقه غیر مجاز', [
+    incidentScenarioText('explosiveItemType', 'نوع ماده یا وسیله محترقه'),
+    incidentScenarioText('explosiveItemLocation', 'محل نگهداری یا وقوع'),
+    incidentScenarioText('explosiveItemRisk', 'خطر یا خسارت احتمالی')
+  ], 'مواد محترقه غیرمجاز'),
+  incidentScenario('جرائم علیه امنیت داخلی و خارجی', [
+    incidentScenarioText('securityThreatType', 'موضوع یا تهدید مشاهده‌شده'),
+    incidentScenarioText('securityThreatTarget', 'هدف یا محل مرتبط'),
+    incidentScenarioText('securityThreatEvidence', 'نشانه‌ها یا مستندات موجود')
+  ]),
+  incidentScenario('جرائم برخلاف تکالیف نظامی', [
+    incidentScenarioText('militaryDutyPerson', 'فرد یا واحد مرتبط'),
+    incidentScenarioText('militaryDutyBreach', 'تکلیف یا رفتار نقض‌شده'),
+    incidentScenarioText('militaryDutyLocation', 'محل یا زمان مرتبط')
+  ]),
+  incidentScenario('جرائم مرتبط با فرار', [
+    incidentScenarioText('escapePerson', 'مشخصات فرد مرتبط'),
+    incidentScenarioText('escapeStatus', 'وضعیت یا محل پیش از فرار'),
+    incidentScenarioText('escapeDirection', 'مسیر یا جهت احتمالی')
+  ]),
+  incidentScenario('جرائم علیه تمامیت اشخاص', [
+    incidentScenarioText('physicalIntegrityPerson', 'مشخصات فرد آسیب‌دیده یا در معرض آسیب'),
+    incidentScenarioText('physicalIntegrityAction', 'اقدام یا رفتار مشاهده‌شده'),
+    incidentScenarioText('physicalIntegrityInjury', 'آسیب یا نتیجه ایجادشده')
+  ]),
+  incidentScenario('جرائم علیه شخصیت معنوی و اشخاص و آزادی تن', [
+    incidentScenarioText('dignityPerson', 'فرد یا افراد درگیر'),
+    incidentScenarioText('dignityAction', 'رفتار یا اقدام مشاهده‌شده'),
+    incidentScenarioText('dignityEvidence', 'نشانه‌ها یا مستندات موجود')
+  ]),
+  incidentScenario('جرائم علیه اموال و مالکیت', [
+    incidentScenarioText('propertyOffenceTarget', 'مال یا حق مالکیت درگیر'),
+    incidentScenarioText('propertyOffenceAction', 'اقدام مشاهده‌شده'),
+    incidentScenarioText('propertyOffenceLoss', 'خسارت یا زیان واردشده')
+  ]),
+  incidentScenario('جرائم علیه نظم و آسایش عمومی', [
+    incidentScenarioText('publicOrderLocation', 'محل یا محدوده'),
+    incidentScenarioText('publicOrderBehavior', 'رفتار یا اقدام برهم‌زننده نظم'),
+    incidentScenarioText('publicOrderImpact', 'اثر آن بر مردم یا محیط')
+  ]),
+  incidentScenario('جرائم مرتبط با مواد مخدر_ قاچاق و تبانی', DRUG_SCENARIO_FIELDS, 'مواد مخدر قاچاق تبانی'),
+  incidentScenario('جرائم ضد عفت و اخلاق عمومی', [
+    incidentScenarioText('moralityContext', 'محل یا بستر مرتبط'),
+    incidentScenarioText('moralityAction', 'رفتار یا اقدام مشاهده‌شده'),
+    incidentScenarioText('moralityPeople', 'افراد یا نشانه‌های مرتبط')
+  ]),
+  incidentScenario('جرائم مرتبط با رانندگی و وسایل نقلیه', [
+    incidentScenarioText('trafficVehicle', 'وسیله نقلیه یا راننده مرتبط'),
+    incidentScenarioText('trafficViolation', 'رفتار یا تخلف مشاهده‌شده'),
+    incidentScenarioText('trafficRisk', 'خطر یا خسارت ایجادشده')
+  ]),
+  incidentScenario('جرائم مرتبط با جعل و تزویر', [
+    incidentScenarioText('documentForgerySubject', 'مدرک، سند یا موضوع موردنظر'),
+    incidentScenarioText('documentForgerySigns', 'نشانه‌های جعل یا تزویر'),
+    incidentScenarioText('documentForgeryUse', 'محل یا نحوه استفاده مشاهده‌شده')
+  ]),
+  incidentScenario('جرائم مربوط به سوءاستفاده از شغل', [
+    incidentScenarioText('occupationalRole', 'شغل یا سمت مرتبط'),
+    incidentScenarioText('occupationalAbuse', 'نحوه سوءاستفاده مشاهده‌شده'),
+    incidentScenarioText('occupationalBenefit', 'منفعت یا زیان ایجادشده')
+  ]),
+  incidentScenario('جرائم مرتبط با ضابطین', [
+    incidentScenarioText('officerRelation', 'ضابط یا واحد مرتبط'),
+    incidentScenarioText('officerAction', 'اقدام یا رفتار مشاهده‌شده'),
+    incidentScenarioText('officerEvidence', 'نشانه‌ها یا مستندات موجود')
+  ]),
+  incidentScenario('جرائم رایانه ای', [
+    incidentScenarioText('computerService', 'سامانه، دستگاه یا حساب مرتبط'),
+    incidentScenarioText('computerAccess', 'روش یا وضعیت دسترسی مشاهده‌شده'),
+    incidentScenarioText('computerHarm', 'آسیب یا پیامد ایجادشده')
+  ], 'رایانه‌ای'),
+  incidentScenario('جرائم پزشکی و بهداشتی', [
+    incidentScenarioText('medicalSubject', 'خدمت، دارو یا موضوع پزشکی مرتبط'),
+    incidentScenarioText('medicalProvider', 'فرد یا مرکز ارائه‌دهنده'),
+    incidentScenarioText('medicalEffect', 'اثر یا خطر ایجادشده')
+  ]),
+  incidentScenario('فراخوان ها', [
+    incidentScenarioText('publicCallTopic', 'موضوع فراخوان'),
+    incidentScenarioText('publicCallChannel', 'راه یا بستر انتشار'),
+    incidentScenarioText('publicCallTime', 'زمان یا بازه اجرای فراخوان')
+  ], 'فراخوان‌ها'),
+  incidentScenario('تخلفات بهداشتی', [
+    incidentScenarioText('healthViolationPlace', 'محل یا واحد مرتبط'),
+    incidentScenarioText('healthViolationAction', 'تخلف بهداشتی مشاهده‌شده'),
+    incidentScenarioText('healthViolationRisk', 'خطر یا اثر احتمالی')
+  ]),
+  incidentScenario('اعتراض مسافرین', [
+    incidentScenarioText('passengerRoute', 'مسیر، پایانه یا وسیله مرتبط'),
+    incidentScenarioText('passengerReason', 'علت اعتراض مسافران'),
+    incidentScenarioText('passengerSituation', 'وضعیت فعلی و تعداد تقریبی افراد')
+  ]),
+  incidentScenario('مفاسد اجتماعی', [
+    incidentScenarioText('socialCorruptionPlace', 'محل یا بستر مرتبط'),
+    incidentScenarioText('socialCorruptionActivity', 'فعالیت یا رفتار مشاهده‌شده'),
+    incidentScenarioText('socialCorruptionImpact', 'اثر یا نگرانی ایجادشده')
+  ]),
+  incidentScenario('سرقت نزاع و درگیری', [
+    incidentScenarioText('theftTarget', 'مال یا محل در معرض سرقت'),
+    incidentScenarioText('theftOpportunityReason', 'به چه دلیل امکان سرقت وجود دارد'),
+    incidentScenarioText('theftConflictDetails', 'جزئیات نزاع یا درگیری مرتبط')
+  ]),
+  incidentScenario('شرارت', [
+    incidentScenarioText('disorderActor', 'مشخصات فرد یا افراد مرتبط'),
+    incidentScenarioText('disorderActions', 'اقدامات یا رفتار مشاهده‌شده'),
+    incidentScenarioText('disorderThreat', 'تهدید یا آسیب احتمالی')
+  ]),
+  incidentScenario('جعل و تقلب', [
+    incidentScenarioText('fraudSubject', 'کالا، سند یا موضوع مرتبط'),
+    incidentScenarioText('fraudSigns', 'نشانه‌های جعل یا تقلب'),
+    incidentScenarioText('fraudUse', 'محل یا نحوه استفاده مشاهده‌شده')
+  ]),
+  incidentScenario('غصب شغل و عناوین', [
+    incidentScenarioText('impersonationTitle', 'شغل، عنوان یا سمت مورد ادعا'),
+    incidentScenarioText('impersonationPerson', 'مشخصات فرد یا مجموعه مرتبط'),
+    incidentScenarioText('impersonationBenefit', 'منفعت یا اقدامی که با آن انجام شده')
+  ]),
+  incidentScenario('قاچاق', [
+    incidentScenarioText('traffickingGoods', 'کالا، شخص یا موضوع مورد قاچاق'),
+    incidentScenarioText('traffickingRoute', 'مبدأ، مقصد یا مسیر مرتبط'),
+    incidentScenarioChoices('traffickingIntent', 'قصد قاچاق', ['قاچاق اعضای بدن', 'جنسی', 'اتباع'], { columns: 3 })
+  ]),
+  incidentScenario('مواد مخدر', DRUG_SCENARIO_FIELDS),
+  incidentScenario('خودکشی', [
+    incidentScenarioText('selfHarmPerson', 'مشخصات فرد یا افراد مرتبط'),
+    incidentScenarioText('selfHarmStatus', 'وضعیت فعلی یا محل رخداد'),
+    incidentScenarioText('selfHarmSigns', 'نشانه‌ها یا دلایل احتمالی مشاهده‌شده')
+  ]),
+  incidentScenario('تهدید و اکراه', [
+    incidentScenarioText('threatTarget', 'فرد یا گروه مورد تهدید'),
+    incidentScenarioText('threatMethod', 'شیوه یا محتوای تهدید'),
+    incidentScenarioText('threatDemand', 'خواسته یا نتیجه موردنظر')
+  ]),
+  incidentScenario('حوادث و سوانح عمدی', [
+    incidentScenarioText('intentionalIncidentPlace', 'محل یا هدف حادثه'),
+    incidentScenarioText('intentionalIncidentAction', 'اقدام یا روند مشاهده‌شده'),
+    incidentScenarioText('intentionalIncidentDamage', 'خسارت یا آسیب ایجادشده')
+  ]),
+  incidentScenario('امور امنیتی و غیر‌مجاز', [
+    incidentScenarioText('unauthorizedSecurityMatter', 'موضوع امنیتی مشاهده‌شده'),
+    incidentScenarioText('unauthorizedSecurityLocation', 'محل یا حوزه مرتبط'),
+    incidentScenarioText('unauthorizedSecuritySigns', 'نشانه‌ها یا رفتار غیرمجاز')
+  ], 'غیر مجاز'),
+  incidentScenario('امور خاص اتباع بیگانه', [
+    incidentScenarioText('foreignPerson', 'مشخصات تبعه یا افراد مرتبط'),
+    incidentScenarioText('foreignStatus', 'وضعیت اقامت یا مدرک مرتبط'),
+    incidentScenarioText('foreignActivity', 'فعالیت یا محل مرتبط')
+  ]),
+  incidentScenario('جرائم مالی و اقتصادی', [
+    incidentScenarioText('financialEconomicSubject', 'موضوع مالی یا اقتصادی'),
+    incidentScenarioText('financialEconomicMethod', 'روش یا اقدام مشاهده‌شده'),
+    incidentScenarioText('financialEconomicAmount', 'مبلغ، حجم یا زیان احتمالی')
+  ]),
+  incidentScenario('جرائم و تخلفات راهور', [
+    incidentScenarioText('roadViolationVehicle', 'وسیله نقلیه یا راننده مرتبط'),
+    incidentScenarioText('roadViolationLocation', 'محل یا مسیر وقوع'),
+    incidentScenarioText('roadViolationRisk', 'خطر یا پیامد ایجادشده')
+  ]),
+  incidentScenario('تخلفات و جرائم صنفی', [
+    incidentScenarioText('businessUnit', 'واحد یا صنف مرتبط'),
+    incidentScenarioText('businessViolation', 'تخلف یا اقدام مشاهده‌شده'),
+    incidentScenarioText('businessAddress', 'نشانی یا محل فعالیت')
+  ]),
+  incidentScenario('جرائم ملکی', [
+    incidentScenarioText('realEstateSubject', 'ملک یا حق مورد اختلاف'),
+    incidentScenarioText('realEstateParties', 'افراد یا مجموعه‌های مرتبط'),
+    incidentScenarioText('realEstateClaim', 'اقدام، ادعا یا وضعیت مشاهده‌شده')
+  ]),
+  incidentScenario('اختلافات خانوادگی', [
+    incidentScenarioText('familyMembers', 'افراد خانواده یا وابستگان مرتبط'),
+    incidentScenarioText('familyDispute', 'موضوع اختلاف یا رفتار مشاهده‌شده'),
+    incidentScenarioText('familyRisk', 'خطر یا نیاز فوری احتمالی')
+  ])
+]);
+
+const INCIDENT_SCENARIO_BY_TITLE = new Map(INCIDENT_SCENARIOS.map(scenario => [scenario.title, scenario]));
+const INCIDENT_SCENARIO_FIELD_KEYS = Object.freeze([
+  ...new Set(INCIDENT_SCENARIOS.flatMap(scenario => scenario.fields.map(fieldDefinition => fieldDefinition.key)))
+]);
+
+function incidentScenarioForTitle(title) {
+  return typeof title === 'string' ? INCIDENT_SCENARIO_BY_TITLE.get(title) || null : null;
+}
+
+function incidentScenarioPickerItems() {
+  return INCIDENT_SCENARIOS.map(scenario => ({ value: scenario.title, label: scenario.title, search: scenario.search }));
+}
+
+function normalizeIncidentScenarioForm(form = state.form) {
+  if (!isPlainRecord(form)) return null;
+  clearRetiredIncidentFields(form);
+  const scenario = incidentScenarioForTitle(form.incidentScenario);
+  if (!scenario) {
+    delete form.incidentScenario;
+    delete form.relatedPeople;
+    delete form.source;
+    INCIDENT_SCENARIO_FIELD_KEYS.forEach(key => delete form[key]);
+    return null;
+  }
+
+  const activeKeys = new Set(scenario.fields.map(fieldDefinition => fieldDefinition.key));
+  INCIDENT_SCENARIO_FIELD_KEYS.forEach(key => {
+    if (!activeKeys.has(key)) delete form[key];
+  });
+  return scenario;
+}
+
+function incidentScenarioFieldsMarkup(scenario) {
+  return scenario.fields.map(fieldDefinition => {
+    if (fieldDefinition.kind === 'choices') {
+      return choices(fieldDefinition.key, fieldDefinition.label, fieldDefinition.items, fieldDefinition.options);
+    }
+    return field(fieldDefinition.key, fieldDefinition.label, fieldDefinition.type, fieldDefinition.options);
+  }).join('');
+}
+
+function incidentScenarioPickerMarkup(scenario) {
+  return searchableSelectMarkup('incidentScenario', 'عنوان سناریو', incidentScenarioPickerItems(), {
+    fieldName: 'incidentScenario',
+    value: scenario ? scenario.title : '',
+    placeholder: 'عنوان سناریو را انتخاب کنید',
+    required: true,
+    className: 'incident-scenario-picker'
+  });
+}
+
+function updateIncidentScenario(component) {
+  if (!component) return;
+  collectForm();
+  const selectedTitle = searchableSelectValue(component);
+  if (incidentScenarioForTitle(selectedTitle)) state.form.incidentScenario = selectedTitle;
+  else delete state.form.incidentScenario;
+  normalizeIncidentScenarioForm(state.form);
+  renderIncidentReport();
+  persistReportDraft();
+}
+
+
 function incidentReportSection() {
-  return formSection('شرح و جزئیات وقوع',
-    `${field('crimeType','نوع جرم یا تخلف','textarea')}${field('relatedPeople','همکاران و افراد مرتبط','textarea')}${field('source','نحوه اطلاع','textarea')}`,
-    'جزئیات رخداد و نحوه اطلاع خود را ثبت کنید.');
+  const scenario = normalizeIncidentScenarioForm(state.form);
+  const fields = scenario
+    ? `${incidentScenarioPickerMarkup(scenario)}<div class="incident-scenario-fields" aria-live="polite">${incidentScenarioFieldsMarkup(scenario)}${field('relatedPeople','همکاران و افراد مرتبط','textarea',{optional:true})}${field('source','نحوه اطلاع','textarea')}</div>`
+    : `${incidentScenarioPickerMarkup(null)}<p class="incident-scenario-guidance">برای نمایش پرسش‌های متناسب با گزارش، عنوان سناریو را جست‌وجو و انتخاب کنید.</p>`;
+  return formSection(
+    scenario ? scenario.title : 'عنوان و جزئیات وقوع',
+    fields,
+    scenario
+      ? 'فقط پرسش‌های مرتبط با این سناریو نمایش داده شده‌اند. همه مواردِ مشخص‌شده الزامی هستند؛ «همکاران و افراد مرتبط» اختیاری است.'
+      : 'با انتخاب عنوان سناریو، پرسش‌های اختصاصی همان گزارش نمایش داده می‌شوند.'
+  );
 }
 
 function renderIncidentReport() {
-  clearRetiredIncidentFields();
   const section = incidentReportSection();
   document.getElementById('incidentReportBody').innerHTML = `
     <section class="form-section-card incident-report-card" aria-labelledby="incidentReportSectionTitle">
@@ -2200,7 +2591,7 @@ function objectForm(subtype) {
         `${field('birdType','نوع پرنده')}${field('birdVisible','مشخصات قابل رؤیت','textarea')}${field('birdSound','صدا','textarea')}${field('birdDirection','مسیر حرکت')}${field('birdSpeed','سرعت حرکت')}${choices('birdMotion','متحرک یا ثابت',['متحرک','ثابت','نامشخص'])}`,
         'ویژگی‌های قابل مشاهده و نحوه حرکت پرنده را وارد کنید.'),
       formSection('سابقه و مستندات',
-        `${yesNo('birdRepeat','تکرار رؤیت در گذشته')}${field('birdObservation','نحوه مشاهده منبع','textarea')}${field('birdSourceRelation','آشنایی منبع با موضوع','textarea')}${field('birdEvidence','مستندات احتمالی','textarea')}`,
+        `${yesNo('birdRepeat','تکرار رؤیت در گذشته')}${field('source','نحوه اطلاع','textarea')}${field('birdSourceRelation','آشنایی منبع با موضوع','textarea')}${field('birdEvidence','مستندات احتمالی','textarea')}`,
         'سابقه مشاهده، ارتباط منبع و مستندات احتمالی را ثبت کنید.')
     ];
   }
@@ -2231,7 +2622,7 @@ function phenomenonForm(subtype) {
         `${field('phenomenonAddress','آدرس و محل وقوع','textarea')}${field('participantCount','تعداد افراد حاضر و شرکت‌کننده','text',{numeric:true})}`,
         'محل رخداد و تعداد تقریبی افراد حاضر را وارد کنید.'),
       formSection('وضعیت تجمع',
-        `${field('participantActions','اقدامات شرکت‌کنندگان','textarea')}${field('signsSlogans','دستنوشته‌ها، شعارها و خواسته‌ها','textarea')}${field('leaders','مشخصات لیدرها','textarea')}${field('futureActions','اقدامات احتمالی آینده','textarea')}${field('formation','نحوه شکل‌گیری پدیده','textarea')}${yesNo('history','سابقه قبلی پدیده')}`,
+        `${field('participantActions','اقدامات شرکت‌کنندگان','textarea')}${field('participantMotivation','انگیزه شرکت‌کنندگان','textarea',{required:true})}${field('signsSlogans','دستنوشته‌ها، شعارها و خواسته‌ها','textarea')}${field('leaders','مشخصات لیدرها','textarea')}${field('futureActions','اقدامات احتمالی آینده','textarea')}${field('formation','نحوه شکل‌گیری پدیده','textarea')}${yesNo('history','سابقه قبلی پدیده')}`,
         'روند شکل‌گیری، وضعیت فعلی و اقدامات احتمالی را شرح دهید.'),
       formSection('اطلاع‌رسانی و منبع',
         `${field('callMethod','نحوه فراخوان و اطلاع‌رسانی','textarea')}${field('source','نحوه اطلاع','textarea')}`,

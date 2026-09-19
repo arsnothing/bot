@@ -72,7 +72,7 @@ require __DIR__ . '/includes/header.php';
       </button>
       <button class="category-card" onclick="chooseCategory('املاک')" type="button">
         <?= buttonIcon('properties', 'category-icon') ?>
-        <strong>املاک</strong>
+        <strong>اماکن</strong>
       </button>
       <button class="category-card" onclick="chooseCategory('اشیاء')" type="button">
         <?= buttonIcon('objects', 'category-icon') ?>
@@ -89,7 +89,7 @@ require __DIR__ . '/includes/header.php';
     <div class="option-grid">
       <button class="option-card" onclick="chooseSubtype('بسته مشکوک')" type="button"><?= buttonIcon('package', 'subtype-svg') ?><strong>بسته مشکوک</strong></button>
       <button class="option-card" onclick="chooseSubtype('خودرو مشکوک')" type="button"><?= buttonIcon('car', 'subtype-svg') ?><strong>خودرو مشکوک</strong></button>
-      <button class="option-card" onclick="chooseSubtype('پرنده')" type="button"><?= buttonIcon('drone', 'subtype-svg') ?><strong>انواع پرنده</strong></button>
+      <button class="option-card" onclick="chooseSubtype('پرنده')" type="button"><?= buttonIcon('drone', 'subtype-svg') ?><strong>ریزپرنده</strong></button>
       <button class="option-card" onclick="chooseSubtype('آنتن استارلینک')" type="button"><?= buttonIcon('satellite', 'subtype-svg') ?><strong>آنتن استارلینک</strong></button>
     </div>
   </main>
