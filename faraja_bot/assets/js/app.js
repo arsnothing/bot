@@ -2153,10 +2153,34 @@ function incidentScenarioPickerMarkup(scenario) {
   });
 }
 
+function incidentScenarioHasEnteredValues(scenario, form = state.form) {
+  if (!scenario || !isPlainRecord(form)) return false;
+  return scenario.fields.some(fieldDefinition => {
+    const value = form[fieldDefinition.key];
+    return typeof value === 'string' && value.trim();
+  });
+}
+
 function updateIncidentScenario(component) {
   if (!component) return;
-  collectForm();
   const selectedTitle = searchableSelectValue(component);
+  const previousScenario = incidentScenarioForTitle(state.form.incidentScenario);
+  const changesScenario = previousScenario && selectedTitle && selectedTitle !== previousScenario.title;
+
+  // Scenario-specific answers should never disappear through an accidental tap in
+  // the picker. A deliberate change still starts the new scenario with clean data.
+  if (changesScenario && incidentScenarioHasEnteredValues(previousScenario)) {
+    const canConfirm = typeof window.confirm === 'function';
+    const confirmed = !canConfirm || window.confirm('با تغییر عنوان سناریو، پاسخ‌های اختصاصی سناریوی فعلی پاک می‌شوند. ادامه می‌دهید؟');
+    if (!confirmed) {
+      const input = component.querySelector('[data-searchable-select-value]');
+      if (input) input.value = previousScenario.title;
+      updateSearchableSelectPresentation(component);
+      return;
+    }
+  }
+
+  collectForm();
   if (incidentScenarioForTitle(selectedTitle)) state.form.incidentScenario = selectedTitle;
   else delete state.form.incidentScenario;
   normalizeIncidentScenarioForm(state.form);
